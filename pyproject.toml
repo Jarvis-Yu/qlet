@@ -40,4 +40,4 @@ tracker = "https://github.com/Jarvis-Yu/?/issues"
 changelog = "https://github.com/Jarvis-Yu/?/blob/master/CHANGELOG.md"
 
 [tool.setuptools.package-dir]
-dgisim = "src/flet/qcomp"
+dgisim = "qlet"
