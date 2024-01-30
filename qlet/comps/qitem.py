@@ -158,8 +158,7 @@ class QItem:
         assert self.inited is False
         assert self.parent is not None
         assert self.ref_parent is not None
-        self.__recalc_size()
-        self.__init_internal_container()
+        self.update_size()
         self.parent.__add_child_item(self)
         self.inited = True
         for child in self.children:
@@ -171,8 +170,7 @@ class QItem:
         assert self.inited is False
         assert self.parent is None
         assert self.ref_parent is not None
-        self.__recalc_size()
-        self.__init_internal_container()
+        self.update_size()
         self.ref_parent.__add_ref_child_item(self)
         self.inited = True
         for child in self.children:
@@ -365,8 +363,12 @@ class QItem:
         for child in self.children:
             if not child.inited:
                 continue
-            child.__recalc_size()
-            child.__update_internal_container_on_size()
+            child.update_size()
+
+    def update_size(self) -> None:
+        """ Recalculate and update the size of this item. """
+        self.__recalc_size()
+        self.__update_internal_container_on_size()
 
     @classmethod
     def init_page(
