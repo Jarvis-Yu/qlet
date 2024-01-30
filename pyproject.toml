@@ -34,9 +34,9 @@ dependencies = [
 ]
 
 [project.urls]
-source = "https://github.com/Jarvis-Yu/?"
-tracker = "https://github.com/Jarvis-Yu/?/issues"
-changelog = "https://github.com/Jarvis-Yu/?/blob/master/CHANGELOG.md"
+source = "https://github.com/Jarvis-Yu/qlet"
+tracker = "https://github.com/Jarvis-Yu/qlet/issues"
+changelog = "https://github.com/Jarvis-Yu/qlet/blob/master/CHANGELOG.md"
 
 [tool.setuptools.package-dir]
 qlet = "qlet"
