@@ -1,3 +1,9 @@
+# 0.1.1
+
+## Fixed
+
+- has no attribute 'root_component' error
+
 # 0.1.0
 
 ## Added

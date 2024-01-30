@@ -158,7 +158,8 @@ class QItem:
         assert self.inited is False
         assert self.parent is not None
         assert self.ref_parent is not None
-        self.update_size()
+        self.__recalc_size()
+        self.__init_internal_container()
         self.parent.__add_child_item(self)
         self.inited = True
         for child in self.children:
@@ -170,7 +171,8 @@ class QItem:
         assert self.inited is False
         assert self.parent is None
         assert self.ref_parent is not None
-        self.update_size()
+        self.__recalc_size()
+        self.__init_internal_container()
         self.ref_parent.__add_ref_child_item(self)
         self.inited = True
         for child in self.children:
