@@ -1,21 +1,5 @@
-"""
-This file is part of Dottore Genius Invokation PWA.
-
-Dottore Genius Invokation PWA is free software: you can redistribute it and/or
-modify it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License, or (at your option)
-any later version.
-
-Dottore Genius Invokation PWA is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-details.
-
-You should have received a copy of the GNU General Public License along with
-Dottore Genius Invokation PWA. If not, see <https://www.gnu.org/licenses/>
-"""
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Callable, Sequence
 
 import flet as ft
 from typing_extensions import Self
@@ -108,6 +92,7 @@ class QItem:
         height_pct: float | None = None,
         width_height_pct: float | None = None,
         height_width_pct: float | None = None,
+        wh_on_resize: Callable[[tuple[int, int]], tuple[int | None, int | None]] | None = None,
         expand: bool = False,
         align: QAlign | ft.Alignment | None = None,
         anchor: QAnchor | None = None,
@@ -129,6 +114,7 @@ class QItem:
         self.height_pct = height_pct
         self.width_height_pct = width_height_pct
         self.height_width_pct = height_width_pct
+        self.wh_on_resize = wh_on_resize
         self.expand = expand
         self.align = align if not isinstance(align, QAlign) else align.to_flet()
         self.anchor = anchor
@@ -153,46 +139,46 @@ class QItem:
         )
 
         if self.parent is not None:
-            self._init_according_to_parent()
+            self.__init_according_to_parent()
         elif self.ref_parent is not None:
-            self._init_according_to_ref_parent()
+            self.__init_according_to_ref_parent()
 
         self.add_flet_comp(flets)
 
-    def _init_by_parent(self, parent: Self) -> None:
+    def __init_by_parent(self, parent: Self) -> None:
         """ Called by parent if this item is added as a child """
         assert self.inited is False
         assert self.parent is None
         self.parent = parent
         self.ref_parent = parent if self.ref_parent is None else self.ref_parent
-        self._init_according_to_parent()
+        self.__init_according_to_parent()
 
-    def _init_according_to_parent(self) -> None:
+    def __init_according_to_parent(self) -> None:
         """ Init this item according to its parent """
         assert self.inited is False
         assert self.parent is not None
         assert self.ref_parent is not None
-        self._recalc_size()
-        self._init_internal_container()
-        self.parent._add_child_item(self)
+        self.__recalc_size()
+        self.__init_internal_container()
+        self.parent.__add_child_item(self)
         self.inited = True
         for child in self.children:
             if child.inited:
                 continue
-            child._init_by_parent(self)
+            child.__init_by_parent(self)
 
-    def _init_according_to_ref_parent(self) -> None:
+    def __init_according_to_ref_parent(self) -> None:
         assert self.inited is False
         assert self.parent is None
         assert self.ref_parent is not None
-        self._recalc_size()
-        self._init_internal_container()
-        self.ref_parent._add_ref_child_item(self)
+        self.__recalc_size()
+        self.__init_internal_container()
+        self.ref_parent.__add_ref_child_item(self)
         self.inited = True
         for child in self.children:
-            child._init_by_parent(self)
+            child.__init_by_parent(self)
 
-    def _init_internal_container(self) -> None:
+    def __init_internal_container(self) -> None:
         """ Init the internal container """
         if self.expand:
             self._container = ft.Container(
@@ -249,7 +235,7 @@ class QItem:
         self._container.rotate = self.rotate
         self._container.border_radius = self.border_radius
 
-    def _update_internal_container_on_size(self) -> None:
+    def __update_internal_container_on_size(self) -> None:
         """ Update the internal container on size change """
         if self.expand:
             return
@@ -274,7 +260,7 @@ class QItem:
         top_trans_container.width = self.width
         top_trans_container.height = self.height
 
-    def _recalc_size(self) -> None:
+    def __recalc_size(self) -> None:
         """ Recalculate or init the size of this item """
         ref_parent_width = self.ref_parent.width if self.ref_parent.width is not None else 0
         ref_parent_height = self.ref_parent.height if self.ref_parent.height is not None else 0
@@ -287,6 +273,13 @@ class QItem:
             self.height = ref_parent_height * self.height_pct
             if self.width_height_pct is not None:
                 self.width = self.height * self.width_height_pct
+
+        if self.wh_on_resize is not None:
+            width, height = self.wh_on_resize((ref_parent_height, ref_parent_width))
+            if width is not None:
+                self.width = width
+            if height is not None:
+                self.height = height
 
         if self.anchor is not None:
             ref_width = ref_parent_width - self.inset.left - self.inset.right
@@ -317,15 +310,15 @@ class QItem:
             self.width = ref_parent_width
             self.height = ref_parent_height
 
-        self._on_resized()
+        self.__on_resized()
 
-    def _add_child_item(self, item: Self) -> None:
+    def __add_child_item(self, item: Self) -> None:
         if item not in self.children:
             self.children.append(item)
         if item.root_component not in self._frame.controls:
             self._frame.controls.append(item.root_component)
 
-    def _add_ref_child_item(self, item: Self) -> None:
+    def __add_ref_child_item(self, item: Self) -> None:
         if item not in self.children:
             self.children.append(item)
 
@@ -337,7 +330,7 @@ class QItem:
         children = children if isinstance(children, Sequence) else (children,)
         if self.inited:
             for child in children:
-                child._init_by_parent(self)
+                child.__init_by_parent(self)
         else:
             if isinstance(children, Sequence):
                 self.children.extend(children)
@@ -350,10 +343,10 @@ class QItem:
         else:
             self._frame.controls.extend(comp)
 
-    def _add_to_page(self, page: ft.Page) -> None:
+    def __add_to_page(self, page: ft.Page) -> None:
         self.width = page.width - page.padding * 2
         self.height = page.height - page.padding * 2
-        self._init_internal_container()
+        self.__init_internal_container()
         page.bgcolor = self.colour
         page.controls.append(ft.SafeArea(
             content=self.root_component,
@@ -363,17 +356,17 @@ class QItem:
         def on_resize(_: ft.ControlEvent) -> None:
             self.width = page.width - page.padding * 2
             self.height = page.height - page.padding * 2
-            self._on_resized()
+            self.__on_resized()
             page.update()
 
         page.on_resize = on_resize
 
-    def _on_resized(self) -> None:
+    def __on_resized(self) -> None:
         for child in self.children:
             if not child.inited:
                 continue
-            child._recalc_size()
-            child._update_internal_container_on_size()
+            child.__recalc_size()
+            child.__update_internal_container_on_size()
 
     @classmethod
     def init_page(
@@ -386,6 +379,6 @@ class QItem:
         Returns the item.
         """
         root_item = QItem(expand=True, colour=colour)
-        root_item._add_to_page(page)
+        root_item.__add_to_page(page)
         root_item.inited = True
         return root_item
