@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qlet"
+version = "0.0.0"
+license = {file = "LICENSE"}
+
+description = "Provides Qt like api for flet components"
+authors = [{ name="Jarvis Yu" }]
+requires-python = ">=3.9"
+readme = "README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Typing :: Typed",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+]
+
+dependencies = [
+    "typing-extensions == 4.7.1",
+]
+
+[project.urls]
+source = "https://github.com/Jarvis-Yu/?"
+tracker = "https://github.com/Jarvis-Yu/?/issues"
+changelog = "https://github.com/Jarvis-Yu/?/blob/master/CHANGELOG.md"
+
+[tool.setuptools.package-dir]
+dgisim = "src/flet/qcomp"
