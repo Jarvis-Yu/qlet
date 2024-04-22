@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qlet"
-version = "0.1.1"
+version = "0.1.2"
 license = {file = "LICENSE"}
 
 description = "Provides Qt like api for flet components"

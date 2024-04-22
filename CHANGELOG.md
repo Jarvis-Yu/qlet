@@ -1,3 +1,9 @@
+# 0.1.2
+
+## Fixed
+
+- Async size update of QImage
+
 # 0.1.1
 
 ## Fixed
