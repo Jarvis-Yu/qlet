@@ -26,9 +26,9 @@ class QText(QItem):
                 ),
             ))
 
-    def __on_resized(self) -> None:
+    def _on_resized(self) -> None:
         if self._size_rel_height is not None:
             self._text.size = self.height * self._size_rel_height
         elif self._size_rel_width is not None:
             self._text.size = self.width * self._size_rel_width
-        super().__on_resized()
+        super()._on_resized()

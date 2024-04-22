@@ -18,7 +18,7 @@ class QImage(QItem):
         self._image.height = self.height
         self.add_flet_comp(self._image)
     
-    def __on_resized(self) -> None:
+    def _on_resized(self) -> None:
         self._image.width = self.width
         self._image.height = self.height
-        super().__on_resized()
+        super()._on_resized()
