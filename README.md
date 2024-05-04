@@ -15,6 +15,26 @@ pip install qlet
 
 ## Examples
 
-***WIP***
+```py
+assert isinstance(root_item, QItem)
+root_item.add_children((
+    QText(
+        text="Hello, qlet",
+        text_colour="#000000",
+        align=QAlign(0.5, 0.5),  # centre the item
+        width_pct=0.5,           # half the width of parent
+        height_pct=0.5,          # half the height of parent
+        colour="#FFFFFF",        # background colour
+    ),
+    QItem(
+        anchor=QAnchor(left=0),       # adhere to the left
+        wh_on_resize=lambda wh: (     # wh is a tuple[parent width, parent height]
+            0.3 * min(wh[0], wh[1]),  # child width
+            min(wh[0], wh[1]),        # child height
+        ),
+        colour="#AAAAAA",             # background colour
+    ),
+))
+```
 
-The repo owner is busy recently, but this section should be filled by the end of Feb 2024.
+Please check repository directory `examples/` for more code example.

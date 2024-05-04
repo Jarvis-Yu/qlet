@@ -105,6 +105,28 @@ class QItem:
         children: Sequence[Self] | Self = (),
         flets: Sequence[ft.Control] | ft.Control = (),
     ):
+        """
+        :param parent: A parent item that is responsible for auto-updating this item's size.
+        :param ref_parent: A parent item that is used for calculating the size of this item, default to be the same as the ``parent``.
+        :param width: The width of this item.
+        :param height: The height of this item.
+        :param width_pct: The width of this item as a percentage of the ``ref_parent``'s width.
+        :param height_pct: The height of this item as a percentage of the ``ref_parent``'s height.
+        :param width_height_pct: The width of this item as a percentage of the ``ref_parent``'s height.
+        :param height_width_pct: The height of this item as a percentage of the ``ref_parent``'s width.
+        :param wh_on_resize: A function that takes the ``ref_parent``'s width and height and returns the new width and height.
+        :param expand: Whether this item should expand to fill the parent.
+        :param align: The alignment of this item in the parent.
+        :param anchor: The anchor of this item in the parent.
+        :param rotate: The rotation of this item.
+        :param inset: The padding of this item.
+        :param clip: The clip behavior of this item.
+        :param colour: The background colour of this item.
+        :param border: The border of this item.
+        :param border_radius: The border radius of this item.
+        :param children: The QItem-based children of this item.
+        :param flets: The flet-component-based children of this item.
+        """
         self.object_name = object_name
         self.parent = parent
         self.ref_parent = ref_parent if ref_parent is not None else parent

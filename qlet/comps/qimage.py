@@ -12,6 +12,12 @@ class QImage(QItem):
             fit: ft.ImageFit = ft.ImageFit.COVER,
             **kwargs,
         ):
+        """
+        :param src: The source of the image.
+        :param border_radius: The border radius of the image.
+        :param fit: The fit of the image.
+        :param kwargs: Additional arguments to pass to the QItem constructor.
+        """
         self._image = ft.Image(src=src, border_radius=border_radius, fit=fit)
         super().__init__(border_radius=border_radius, **kwargs)
         self._image.width = self.width
