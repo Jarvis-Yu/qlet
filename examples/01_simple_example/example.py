@@ -17,6 +17,12 @@ def main(page: ft.Page):
             QItem(
                 anchor=QAnchor(left=0, top=0, bottom=1, right=0.3),
                 colour=ft.colors.with_opacity(0.3, "#FF0000"),
+                children=(QImage(
+                    src="https://cdn.pixabay.com/photo/2023/10/26/08/24/autumn-8342089_1280.jpg",
+                    align=QAlign(0.5, 0.5),
+                    width_pct=1.0,   # width of the image container is 100% of the parent's width
+                    height_pct=0.7,  # height of the image container is 50% of the parent's height
+                )),
             ),
             QItem(
                 align=QAlign(0.5, 0.5),
