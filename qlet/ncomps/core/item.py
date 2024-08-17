@@ -42,16 +42,17 @@ class Item:
         - variables end with '_'
         """
         if id is None:
-            class_name = self.__class__.__name__
-            while class_name.startswith('_'):
-                class_name = class_name[1:]
-            id = f"{self.__class__.__name__}_{_id(self)}"
+            id = ""
+            displayed_name = f"{self.__class__.__name__}_{_id(self)}"
+        else:
+            displayed_name = id
         assert id not in {_PARENT, _SELF}
         assert not id.startswith('_'), f"id cannot start with '_': {id}"
         assert not id.endswith('_'), f"id cannot end with '_': {id}"
-        assert id.isidentifier(), f"id is not a valid identifier: {id}"
+        assert not bool(id) or id.isidentifier(), f"id is not a valid identifier: {id}"
 
         self.id = id
+        self.displayed_id = displayed_name
         self.root = root
         self._adopt_id: str | None = None
         self.children: list[Item] = []

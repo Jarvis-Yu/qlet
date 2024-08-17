@@ -95,6 +95,15 @@ class TestItem(unittest.TestCase):
             lambda: Item(id="1v"),
         )
 
+    def test_default_id(self):
+        item = Item()
+        self.assertEqual(item.id, "")
+        self.assertNotEqual(item.displayed_id, "")
+
+        item = Item(id="name")
+        self.assertEqual(item.id, "name")
+        self.assertEqual(item.displayed_id, "name")
+
     def test_custom_variable_pattern(self):
         # custom variable cannot start with '_'
         self.assertRaises(
@@ -425,6 +434,7 @@ class TestItem(unittest.TestCase):
         self.assertEqual(grandchild.v1_, 3)
 
     def test_new_peer_update(self):
+        # child 2 added later
         child1 = Item(
             v1_=lambda d: d.keqing.v1_,
         )
