@@ -76,21 +76,24 @@ class Item:
         return self._adopt_id
 
     def _add_property(self, key: str, value: Any) -> None:
+        """ adds a new property to self """
         assert len(key) > 0, f"Empty key is not allowed: \"{key}\""
         assert key[0] != '_', f"Self-defined values must not start with '_': \"{key}\""
         assert key[-1] == '_', f"Self-defined values must end with '_': \"{key}\""
+        assert key not in self._properties, "_add_property() is only responsible for new properties"
         if not isfunction(value):
             self._properties[key] = _ItemProperty(key, value, lambda _: value, True)
         else:
             self._properties[key] = _ItemProperty(key, _NULL, value, False)
 
     def _update_property(self, key: str, value: Any) -> None:
-        assert key in self._properties
+        """ updates an existing property """
+        assert key in self._properties, "_update_property() is only responsible for updating existing properties"
         property = self._properties[key]
         if not isfunction(value):
-            property.set_new_value(self._pedigree, value)
+            property.set_new_value(value)
         else:
-            property.set_new_f_value(self._pedigree, value)
+            property.set_new_f_value(value)
 
     def _set_key_val(self, key: str, value: Any) -> None:
             if key not in self._properties:
@@ -132,21 +135,6 @@ class Item:
     def set_parent(self, parent: Item) -> None:
         parent.add_child(self)
 
-    def _ancestors_dict(self) -> dict[str, Item]:
-        mapping: dict[str, Item] = {}
-        ancestor = self.parent
-        while ancestor is not None:
-            if ancestor.id not in mapping:
-                mapping[ancestor.id] = ancestor
-            if _PARENT not in mapping:
-                mapping[_PARENT] = ancestor
-        return mapping
-
-    def _peers_dict(self) -> dict[str, Item]:
-        if self.parent is None:
-            return {}
-        return self.parent._children_dict()
-
     def _children_dict(self) -> dict[str, Item]:
         mapping: dict[str, Item] = {}
         for child in self.children:
@@ -176,7 +164,10 @@ class Item:
             child._compute_pedigrees()
 
     def _compute_new_requirements(self) -> None:
-        """ update requirements if necessary """
+        """
+        Updates requirements so all references follow the (potentially) new
+        pedigree.
+        """
         for property in self._properties.values():
             if any(
                     p is not self._pedigree._get_property((k1, k2))
@@ -187,6 +178,7 @@ class Item:
             child._compute_new_requirements()
 
     def _compute_properties(self, queue: deque[tuple[Item, _ItemProperty]]) -> None:
+        """ Updates queued properties according to the current definitions """
         last_queue_len = len(queue)
         loop_count = last_queue_len + 1
         while queue:
@@ -212,14 +204,13 @@ class Item:
                     queue.append((item, property))
 
     def _compute_self_properties(self) -> None:
-        """
-        This method assumes all requirements are up-to-date.
-        """
+        """ This method assumes all requirements are up-to-date. """
         queued_properties: set[tuple[Item, _ItemProperty]] = set(zip(repeat(self), self._properties.values()))
         queue: deque[tuple[Item, _ItemProperty]] = deque(list(queued_properties))
         self._compute_properties(queue)
 
     def _compute_children_properties(self) -> None:
+        """ This method assumes all requirements are up-to-date. """
         queued_properties: set[tuple[Item, _ItemProperty]] = set()
         for child in self.children:
             for property in child._properties.values():
@@ -234,9 +225,6 @@ class Item:
         self._compute_new_requirements()
         self._compute_self_properties()
         self._compute_children_properties()
-
-    # def on_size_update(self, width: int, height: int) -> None:
-    #     ...
 
 
 class _ItemProperty:
@@ -273,7 +261,8 @@ class _ItemProperty:
     @property
     def dependents(self) -> set[_ItemProperty]:
         return self._dependents
-    def set_new_value(self, pedigree: _Pedigree, value: Any) -> None:
+
+    def set_new_value(self, value: Any) -> None:
         self.remove_as_dependent(self._requirements.values())
         self.remove_requirements()
         if self.up_to_date and value != self.value:
@@ -282,7 +271,7 @@ class _ItemProperty:
         self._f_value = lambda _: value
         self._up_to_date = True
 
-    def set_new_f_value(self, pedigree: _Pedigree, f_value: Callable) -> None:
+    def set_new_f_value(self, f_value: Callable) -> None:
         self.remove_as_dependent(self._requirements.values())
         self.remove_requirements()
         was_up_to_date = self.up_to_date
@@ -388,6 +377,10 @@ class _ItemProperty:
 
 
 class _PropertyHandle:
+    """
+    This is a proxy providing access to accessible properties of the item.
+    It can record all accesses.
+    """
     def __init__(
             self, access_name: str, item_handle: _ItemHandle, item: Item,
     ):
@@ -405,8 +398,8 @@ class _PropertyHandle:
 
 class _ItemHandle:
     """
-    This is a proxy providing access to accessible properties of this or other
-    items.
+    This is a proxy providing access to accessible items in the pedigree.
+    It can record all accesses.
     """
     def __init__(
             self, pedigree: _Pedigree,
