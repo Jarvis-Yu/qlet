@@ -9,6 +9,9 @@ from typing_extensions import overload
 from .null_value import _NullValue
 
 
+__all__ = ["Item"]
+
+
 # built-in function alias
 _id = id
 
@@ -62,6 +65,7 @@ class Item:
 
         self._pedigree: _Pedigree = _Pedigree(self, {}, {})
         self._pedigree_up_to_date = root
+        self._last_pedigree: _Pedigree = self._pedigree
 
         self._set_kwargs(**kwargs)
 
@@ -136,6 +140,16 @@ class Item:
     def set_parent(self, parent: Item) -> None:
         parent.add_child(self)
 
+    def remove_child(self, removed_child: Item) -> None:
+        for child in self.children:
+            child._outdate_pedigree()
+        self.children.remove(removed_child)
+        removed_child._remove_parent()
+
+    def _remove_parent(self) -> None:
+        assert self.parent is not None, "Parent must be present to be removed"
+        self.parent = None
+
     def _children_dict(self) -> dict[str, Item]:
         mapping: dict[str, Item] = {}
         for child in self.children:
@@ -169,12 +183,14 @@ class Item:
         Updates requirements so all references follow the (potentially) new
         pedigree.
         """
-        for property in self._properties.values():
-            if any(
-                    p is not self._pedigree._get_property((k1, k2))
-                    for (k1, k2), p in property.requirements.items()
-            ):
-                property.compute_new_requirements(self._pedigree)
+        if self._last_pedigree is not self._pedigree:
+            self._last_pedigree = self._pedigree
+            for property in self._properties.values():
+                if any(
+                        p is not self._pedigree._get_property((k1, k2))
+                        for (k1, k2), p in property.requirements.items()
+                ):
+                    property.compute_new_requirements(self._pedigree)
         for child in self.children:
             child._compute_new_requirements()
 

@@ -4,7 +4,7 @@ import time
 import unittest
 from typing import Callable
 
-from qlet.ncomps.core.item import *
+from qlet.ncomps.core.item import CircleException, Item
 
 
 def wait_with_timeout(
@@ -454,3 +454,79 @@ class TestItem(unittest.TestCase):
         root.add_child(child2)
         root.compute()
         self.assertEqual(child1.v1_, 11)
+
+        # check at grandchildren level
+        grandchild1 = Item(
+            v1_=lambda d: d.keqing.v1_,
+        )
+        grandchild2 = Item(
+            id="keqing",
+            v1_=11,
+        )
+        child = Item(
+            children=grandchild1,
+        )
+        root = Item(
+            id="keqing",
+            root=True,
+            v1_=1,
+            children=child,
+        )
+        root.compute()
+        self.assertEqual(grandchild1.v1_, 1)
+
+        child.add_child(grandchild2)
+        root.compute()
+        self.assertEqual(grandchild1.v1_, 11)
+    
+    def test_remove_peer_update(self):
+        # children level
+        child1 = Item(
+            v1_=lambda d: d.keqing.v1_,
+        )
+        child2 = Item(
+            id="keqing",
+            v1_=11,
+        )
+        root = Item(
+            id="keqing",
+            root=True,
+            v1_=1,
+            children=(
+                child1,
+                child2,
+            ),
+        )
+        root.compute()
+        self.assertEqual(child1.v1_, 11)
+
+        root.remove_child(child2)
+        root.compute()
+        self.assertEqual(child1.v1_, 1)
+
+        # grandchildren level
+        grandchild1 = Item(
+            v1_=lambda d: d.keqing.v1_,
+        )
+        grandchild2 = Item(
+            id="keqing",
+            v1_=11,
+        )
+        child = Item(
+            children=(
+                grandchild1,
+                grandchild2
+            ),
+        )
+        root = Item(
+            id="keqing",
+            root=True,
+            v1_=1,
+            children=child,
+        )
+        root.compute()
+        self.assertEqual(grandchild1.v1_, 11)
+
+        child.remove_child(grandchild2)
+        root.compute()
+        self.assertEqual(grandchild1.v1_, 1)
