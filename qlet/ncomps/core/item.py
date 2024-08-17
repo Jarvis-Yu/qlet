@@ -67,7 +67,7 @@ class Item:
         self._pedigree_up_to_date = root
         self._last_pedigree: _Pedigree = self._pedigree
 
-        self._set_kwargs(**kwargs)
+        self.__set_kwargs(**kwargs)
 
         if not isinstance(children, Sequence):
             children = (children,)
@@ -80,7 +80,7 @@ class Item:
             return self.id
         return self._adopt_id
 
-    def _add_property(self, key: str, value: Any) -> None:
+    def __add_property(self, key: str, value: Any) -> None:
         """ adds a new property to self """
         assert len(key) > 0, f"Empty key is not allowed: \"{key}\""
         assert key[0] != '_', f"Self-defined values must not start with '_': \"{key}\""
@@ -91,7 +91,7 @@ class Item:
         else:
             self._properties[key] = _ItemProperty(key, _NULL, value, False)
 
-    def _update_property(self, key: str, value: Any) -> None:
+    def __update_property(self, key: str, value: Any) -> None:
         """ updates an existing property """
         assert key in self._properties, "_update_property() is only responsible for updating existing properties"
         property = self._properties[key]
@@ -100,22 +100,22 @@ class Item:
         else:
             property.set_new_f_value(value)
 
-    def _set_key_val(self, key: str, value: Any) -> None:
+    def __set_key_val(self, key: str, value: Any) -> None:
             if key not in self._properties:
-                self._add_property(key, value)
+                self.__add_property(key, value)
             else:
-                self._update_property(key, value)
+                self.__update_property(key, value)
 
-    def _set_kwargs(self, **kwargs) -> None:
+    def __set_kwargs(self, **kwargs) -> None:
         for key, value in kwargs.items():
-            self._set_key_val(key, value)
+            self.__set_key_val(key, value)
 
     def __setattr__(self, name: str, value: Any) -> None:
         is_user_defined = (not name.startswith('_')) and name.endswith('_')
         if not is_user_defined:
             return super().__setattr__(name, value)
         else:
-            return self._set_key_val(name, value)
+            return self.__set_key_val(name, value)
 
     def __getattribute__(self, name: str) -> Any:
         is_user_defined = (not name.startswith('_')) and name.endswith('_')
@@ -129,11 +129,11 @@ class Item:
 
     def add_child(self, new_child: Item) -> None:
         for child in self.children:
-            child._outdate_pedigree()
+            child.__outdate_pedigree()
         self.children.append(new_child)
-        new_child._set_parent(new_child)
+        new_child.__set_parent(new_child)
 
-    def _set_parent(self, parent: Item) -> None:
+    def __set_parent(self, parent: Item) -> None:
         assert self.parent is None, "An item can only have one parent in their life."
         self.parent = parent
 
@@ -142,13 +142,16 @@ class Item:
 
     def remove_child(self, removed_child: Item) -> None:
         for child in self.children:
-            child._outdate_pedigree()
+            child.__outdate_pedigree()
         self.children.remove(removed_child)
-        removed_child._remove_parent()
+        removed_child.__remove_parent()
 
-    def _remove_parent(self) -> None:
+    def __remove_parent(self) -> None:
         assert self.parent is not None, "Parent must be present to be removed"
         self.parent = None
+
+    def remove_parent(self) -> None:
+        self.parent.remove_child(self)
 
     def _children_dict(self) -> dict[str, Item]:
         mapping: dict[str, Item] = {}
@@ -157,10 +160,10 @@ class Item:
                 mapping[child.peer_id] = child
         return mapping
 
-    def _outdate_pedigree(self) -> None:
+    def __outdate_pedigree(self) -> None:
         self._pedigree_up_to_date = False
 
-    def _compute_pedigrees(self) -> None:
+    def __compute_pedigrees(self) -> None:
         """ update pedigree for all offsprings but self """
         assert self._pedigree_up_to_date
         if any(
@@ -176,9 +179,9 @@ class Item:
                     child._pedigree = _Pedigree(child, ancestors, peers)
                     child._pedigree_up_to_date = True
         for child in self.children:
-            child._compute_pedigrees()
+            child.__compute_pedigrees()
 
-    def _compute_new_requirements(self) -> None:
+    def __compute_new_requirements(self) -> None:
         """
         Updates requirements so all references follow the (potentially) new
         pedigree.
@@ -192,9 +195,9 @@ class Item:
                 ):
                     property.compute_new_requirements(self._pedigree)
         for child in self.children:
-            child._compute_new_requirements()
+            child.__compute_new_requirements()
 
-    def _compute_properties(self, queue: deque[tuple[Item, _ItemProperty]]) -> None:
+    def __compute_properties(self, queue: deque[tuple[Item, _ItemProperty]]) -> None:
         """ Updates queued properties according to the current definitions """
         last_queue_len = len(queue)
         loop_count = last_queue_len + 1
@@ -220,28 +223,28 @@ class Item:
                 if not succ:
                     queue.append((item, property))
 
-    def _compute_self_properties(self) -> None:
+    def __compute_self_properties(self) -> None:
         """ This method assumes all requirements are up-to-date. """
         queued_properties: set[tuple[Item, _ItemProperty]] = set(zip(repeat(self), self._properties.values()))
         queue: deque[tuple[Item, _ItemProperty]] = deque(list(queued_properties))
-        self._compute_properties(queue)
+        self.__compute_properties(queue)
 
-    def _compute_children_properties(self) -> None:
+    def __compute_children_properties(self) -> None:
         """ This method assumes all requirements are up-to-date. """
         queued_properties: set[tuple[Item, _ItemProperty]] = set()
         for child in self.children:
             for property in child._properties.values():
                 queued_properties.add((child, property))
         queue: deque[tuple[Item, _ItemProperty]] = deque(list(queued_properties))
-        self._compute_properties(queue)
+        self.__compute_properties(queue)
         for child in self.children:
-            child._compute_children_properties()
+            child.__compute_children_properties()
 
     def compute(self) -> None:
-        self._compute_pedigrees()
-        self._compute_new_requirements()
-        self._compute_self_properties()
-        self._compute_children_properties()
+        self.__compute_pedigrees()
+        self.__compute_new_requirements()
+        self.__compute_self_properties()
+        self.__compute_children_properties()
 
 
 class _ItemProperty:
