@@ -370,7 +370,77 @@ class TestItem(unittest.TestCase):
         self.assertEqual(grandchild.v3_, 1)
 
     def test_detect_circle(self):
-        FAIL_TEXT = "Circle not detected in time!"
-        wait_with_timeout(FAIL_TEXT, 1, self_circle_case)
-        wait_with_timeout(FAIL_TEXT, 1, inter_circle_case)
-        wait_with_timeout(FAIL_TEXT, 1, long_circle_case)
+        TIMEOUT = 1
+        FAIL_TEXT = f"Circle not detected in {TIMEOUT}s!"
+        wait_with_timeout(FAIL_TEXT, TIMEOUT, self_circle_case)
+        wait_with_timeout(FAIL_TEXT, TIMEOUT, inter_circle_case)
+        wait_with_timeout(FAIL_TEXT, TIMEOUT, long_circle_case)
+
+    def test_new_child_update(self):
+        child = Item(
+            v1_=lambda d: d.parent.v1_ + 1,
+        )
+        root = Item(
+            root=True,
+            v1_=1,
+        )
+        root.compute()
+        root.add_child(child)
+        root.compute()
+        self.assertEqual(child.v1_, 2)
+
+    def test_new_grandchild_update(self):
+        grandchild = Item(
+            v1_=lambda d: d.parent.v1_ + 1,
+        )
+        child = Item(
+            v1_=lambda d: d.parent.v1_ + 1,
+            children=grandchild,
+        )
+        root = Item(
+            root=True,
+            v1_=1,
+        )
+        root.compute()
+        root.add_child(child)
+        root.compute()
+        self.assertEqual(child.v1_, 2)
+        self.assertEqual(grandchild.v1_, 3)
+
+        grandchild = Item(
+            v1_=lambda d: d.parent.v1_ + 1,
+        )
+        child = Item(
+            v1_=lambda d: d.parent.v1_ + 1,
+        )
+        root = Item(
+            root=True,
+            v1_=1,
+            children=child,
+        )
+        root.compute()
+        child.add_child(grandchild)
+        root.compute()
+        self.assertEqual(child.v1_, 2)
+        self.assertEqual(grandchild.v1_, 3)
+
+    def test_new_peer_update(self):
+        child1 = Item(
+            v1_=lambda d: d.keqing.v1_,
+        )
+        child2 = Item(
+            id="keqing",
+            v1_=11,
+        )
+        root = Item(
+            id="keqing",
+            root=True,
+            v1_=1,
+            children=child1,
+        )
+        root.compute()
+        self.assertEqual(child1.v1_, 1)
+
+        root.add_child(child2)
+        root.compute()
+        self.assertEqual(child1.v1_, 11)

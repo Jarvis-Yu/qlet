@@ -1,10 +1,8 @@
 from __future__ import annotations
-import heapq
-from collections import defaultdict, deque
-from enum import Enum, auto
+from collections import deque
 from inspect import isfunction
 from itertools import repeat
-from typing import Any, Callable, Protocol, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 from typing_extensions import overload
 
@@ -31,7 +29,7 @@ class Item:
             self,
             id: str | None = None,
             root: bool = False,
-            children: Sequence[Item] = (),
+            children: Item | Sequence[Item] = (),
             **kwargs
     ) -> None:
         """
@@ -66,6 +64,8 @@ class Item:
 
         self._set_kwargs(**kwargs)
 
+        if not isinstance(children, Sequence):
+            children = (children,)
         for child in children:
             self.add_child(child)
 
@@ -119,9 +119,11 @@ class Item:
     def _get_property(self, name: str) -> _ItemProperty:
         return self._properties[name]
 
-    def add_child(self, child: Item) -> None:
-        self.children.append(child)
-        child._set_parent(child)
+    def add_child(self, new_child: Item) -> None:
+        for child in self.children:
+            child._outdate_pedigree()
+        self.children.append(new_child)
+        new_child._set_parent(new_child)
 
     def _set_parent(self, parent: Item) -> None:
         assert self.parent is None, "An item can only have one parent in their life."
@@ -152,6 +154,9 @@ class Item:
                 mapping[child.peer_id] = child
         return mapping
 
+    def _outdate_pedigree(self) -> None:
+        self._pedigree_up_to_date = False
+
     def _compute_pedigrees(self) -> None:
         """ update pedigree for all offsprings but self """
         assert self._pedigree_up_to_date
@@ -170,6 +175,17 @@ class Item:
         for child in self.children:
             child._compute_pedigrees()
 
+    def _compute_new_requirements(self) -> None:
+        """ update requirements if necessary """
+        for property in self._properties.values():
+            if any(
+                    p is not self._pedigree._get_property((k1, k2))
+                    for (k1, k2), p in property.requirements.items()
+            ):
+                property.compute_new_requirements(self._pedigree)
+        for child in self.children:
+            child._compute_new_requirements()
+
     def _compute_properties(self, queue: deque[tuple[Item, _ItemProperty]]) -> None:
         last_queue_len = len(queue)
         loop_count = last_queue_len + 1
@@ -182,20 +198,16 @@ class Item:
                 loop_count = last_queue_len + 1
             item, property = queue.popleft()
             assert not (property.up_to_date and any(
-                item._pedigree._get_property(req).requires_update
-                for req in property._requirements
+                p.requires_update
+                for p in property.requirements.values()
             ))  # property up-to-date implies no requirement needs update
             if property.requires_update and any(
-                    item._pedigree._get_property(req).requires_update
-                    for req in property._requirements
+                    p.requires_update
+                    for p in property.requirements.values()
             ):  # requirement needs update, computation delayed
                 queue.append((item, property))
             elif property.requires_update:
-                old_reqs = property.requirements
-                succ, new_reqs = property.try_update(item._pedigree)
-                removed_reqs, added_reqs = old_reqs - new_reqs, new_reqs - old_reqs
-                property.remove_as_dependent(item._pedigree, removed_reqs)
-                property.add_as_dependent(item._pedigree, added_reqs)
+                succ = property.try_update(item._pedigree)
                 if not succ:
                     queue.append((item, property))
 
@@ -219,6 +231,7 @@ class Item:
 
     def compute(self) -> None:
         self._compute_pedigrees()
+        self._compute_new_requirements()
         self._compute_self_properties()
         self._compute_children_properties()
 
@@ -238,7 +251,7 @@ class _ItemProperty:
         self._value = value
         self._f_value = f_value
         self._up_to_date = up_to_date
-        self._requirements: set[tuple[str, str]] = set()
+        self._requirements: dict[tuple[str, str], _ItemProperty] = {}
         self._dependents: set[_ItemProperty] = set()
 
     @property
@@ -254,15 +267,14 @@ class _ItemProperty:
         return self._up_to_date
 
     @property
-    def requirements(self) -> set[tuple[str, str]]:
+    def requirements(self) -> dict[tuple[str, str], _ItemProperty]:
         return self._requirements
 
     @property
     def dependents(self) -> set[_ItemProperty]:
         return self._dependents
-
     def set_new_value(self, pedigree: _Pedigree, value: Any) -> None:
-        self.remove_as_dependent(pedigree, self._requirements)
+        self.remove_as_dependent(self._requirements.values())
         self.remove_requirements()
         if self.up_to_date and value != self.value:
             self.notify_update()
@@ -271,7 +283,7 @@ class _ItemProperty:
         self._up_to_date = True
 
     def set_new_f_value(self, pedigree: _Pedigree, f_value: Callable) -> None:
-        self.remove_as_dependent(pedigree, self._requirements)
+        self.remove_as_dependent(self._requirements.values())
         self.remove_requirements()
         was_up_to_date = self.up_to_date
         self._up_to_date = False
@@ -283,9 +295,9 @@ class _ItemProperty:
     def add_dependent(self, property: _ItemProperty) -> None:
         self._dependents.add(property)
 
-    def add_as_dependent(self, pedigree: _Pedigree, requirements: set[tuple[str, str]]) -> None:
-        for ref in requirements:
-            pedigree._get_property(ref).add_dependent(self)
+    def add_as_dependent(self, properties: Iterable[_ItemProperty]) -> None:
+        for property in properties:
+            property.add_dependent(self)
 
     def remove_dependent(self, property: _ItemProperty) -> None:
         self._dependents.remove(property)
@@ -293,38 +305,55 @@ class _ItemProperty:
     def remove_dependents(self) -> None:
         self._dependents.clear()
 
-    def remove_as_dependent(self, pedigree: _Pedigree, requirements: set[tuple[str, str]]) -> None:
-        for ref in requirements:
-            pedigree._get_property(ref).remove_dependent(self)
+    def remove_as_dependent(self, properties: Iterable[_ItemProperty]) -> None:
+        for property in properties:
+            property.remove_dependent(self)
 
-    def remove_requirement(self, property: _ItemProperty) -> None:
-        self._requirements.remove(property)
+    def add_requirement(self, item_name: str, property_name: str, property: _ItemProperty) -> None:
+        self._requirements[(item_name, property_name)] = property
+
+    def remove_requirement(self, item_name: str, property_name: str) -> None:
+        del self._requirements[(item_name, property_name)]
 
     def remove_requirements(self) -> None:
         self._requirements.clear()
 
-    def remove_as_requirement(self) -> None:
+    def remove_as_requirement(self, item_name: str, property_name: str) -> None:
         for dependent in self._dependents:
             dependent.remove_requirement(self)
 
+    def compute_new_requirements(self, pedigree: _Pedigree) -> None:
+        """ reset requirements according to pedigree, and notify update if necessary """
+        old_props = set(self.requirements.values())
+        self._requirements = {
+            key: pedigree._get_property(key)
+            for key in self.requirements
+        }
+        new_props = set(self.requirements.values())
+        removed_props, added_props = old_props - new_props, new_props - old_props
+        self.remove_as_dependent(removed_props)
+        self.add_as_dependent(added_props)
+        was_up_to_date = self.up_to_date
+        self._up_to_date = False
+        if was_up_to_date:
+            self.notify_update()
+
     def notify_update(self) -> None:
-        """
-        Notify all known dependents the value may require an update.
-        """
+        """ Notify all known dependents the value may require an update.  """
         for dependent in self._dependents:
             was_up_to_date = dependent.up_to_date
             dependent._up_to_date = False
             if was_up_to_date:
                 dependent.notify_update()
 
-    def try_update(self, pedigree: _Pedigree) -> tuple[bool, set[tuple[str, str]]]:
+    def try_update(self, pedigree: _Pedigree) -> bool:
         """
         :returns: (new value is up-to-date, new requirements)
 
         Update value if self is not up-to-date.
         """
         if self.up_to_date:
-            return True, self._requirements
+            return True
         handle = pedigree.handle()
         try:
             handle._start_record()
@@ -335,14 +364,27 @@ class _ItemProperty:
             handle._end_record()
             requirements = handle._requirements
         self._value = value
-        self._requirements = requirements
+        old_reqs = set(self._requirements.keys())
+        removed_reqs, added_reqs = old_reqs - requirements, requirements - old_reqs
+        self.remove_as_dependent([
+            self._requirements[req]
+            for req in removed_reqs
+        ])
+        for req in removed_reqs:
+            self.remove_requirement(*req)
+        for req in added_reqs:
+            self.add_requirement(*req, pedigree._get_property(req))
+        self.add_as_dependent([
+            self._requirements[req]
+            for req in added_reqs
+        ])
         succ = all(
             pedigree._get_property(req).up_to_date
             for req in requirements
         )
         if succ:
             self._up_to_date = True
-        return succ, requirements
+        return succ
 
 
 class _PropertyHandle:
