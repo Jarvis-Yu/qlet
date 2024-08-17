@@ -1,6 +1,71 @@
+import multiprocessing
+import queue
+import time
 import unittest
+from typing import Callable
 
-from qlet.ncomps.core.item import Item
+from qlet.ncomps.core.item import *
+
+
+def wait_with_timeout(
+        fail_text: str,
+        timeout: float | int,
+        f: Callable[[multiprocessing.Queue], None],
+) -> None:
+    channel = multiprocessing.Queue()
+    process = multiprocessing.Process(target=f, args=(channel,))
+    process.start()
+    channel.get()  # wait for start
+    try:
+        channel.get(timeout=timeout)
+        process.join()
+    except queue.Empty:
+        process.terminate()
+        process.join()
+        raise Exception(fail_text)
+
+
+def self_circle_case(queue: multiprocessing.Queue):
+    queue.put("start")
+    item = Item(
+        root=True,
+        v1_=lambda d: d.v1_,
+    )
+    try:
+        item.compute()
+    except CircleException:
+        queue.put("end")
+
+
+def inter_circle_case(queue: multiprocessing.Queue):
+    queue.put("start")
+    item = Item(
+        root=True,
+        v1_=lambda d: d.v2_,
+        v2_=lambda d: d.v1_, 
+    )
+    try:
+        item.compute()
+    except CircleException:
+        queue.put("end")
+
+
+def long_circle_case(queue: multiprocessing.Queue):
+    queue.put("start")
+    item = Item(
+        root=True,
+        v1_=1,
+        v2_=lambda d: d.v1_, 
+        v3_=lambda d: d.v2_ + d.v5_,
+        v4_=lambda d: d.v3_ + d.v6_,
+        v5_=lambda d: d.v4_,
+        v6_=lambda d: d.v5_,
+    )
+    try:
+        item.compute()
+    except CircleException:
+        queue.put("end")
+
 
 class TestItem(unittest.TestCase):
 
@@ -47,7 +112,7 @@ class TestItem(unittest.TestCase):
             root=True,
             v1_=1,
         )
-        item.update()
+        item.compute()
         self.assertEqual(item.v1_, 1)
 
     def test_lambda_const(self):
@@ -55,7 +120,7 @@ class TestItem(unittest.TestCase):
             root=True,
             v1_=lambda d: 1,
         )
-        item.update()
+        item.compute()
         self.assertEqual(item.v1_, 1)
 
     def test_simple_dependency(self):
@@ -64,7 +129,7 @@ class TestItem(unittest.TestCase):
             v1_=1,
             v2_=lambda d: d.self.v1_ + 2,
         )
-        item.update()
+        item.compute()
         self.assertEqual(item.v1_, 1)
         self.assertEqual(item.v2_, 3)
 
@@ -74,7 +139,7 @@ class TestItem(unittest.TestCase):
             v2_=lambda d: d.self.v1_ + 2,
             v3_=lambda d: d.self.v2_ + d.self.v1_,
         )
-        item.update()
+        item.compute()
         self.assertEqual(item.v1_, 1)
         self.assertEqual(item.v2_, 3)
         self.assertEqual(item.v3_, 4)
@@ -85,7 +150,7 @@ class TestItem(unittest.TestCase):
             v1_=1,
             v2_=lambda d: d.v1_ + 2,
         )
-        item.update()
+        item.compute()
         self.assertEqual(item.v1_, 1)
         self.assertEqual(item.v2_, 3)
 
@@ -95,24 +160,24 @@ class TestItem(unittest.TestCase):
             v1_=1,
             v2_=lambda d: d.self.v1_ + 2,
         )
-        item.update()
+        item.compute()
         item.v2_ = 10
         item.v1_ = lambda d: d.v2_ + 3
-        item.update()
+        item.compute()
         self.assertEqual(item.v1_, 13)
         self.assertEqual(item.v2_, 10)
 
         # update new variable
         item.v3_ = lambda d: d.v2_ / 2
         item.v1_ = lambda d: d.v3_ + d.v2_
-        item.update()
+        item.compute()
         self.assertEqual(item.v1_, 15)
         self.assertEqual(item.v2_, 10)
         self.assertEqual(item.v3_, 5)
 
         # update const variable
         item.v2_ = 20
-        item.update()
+        item.compute()
         self.assertEqual(item.v1_, 30)
         self.assertEqual(item.v2_, 20)
         self.assertEqual(item.v3_, 10)
@@ -132,7 +197,7 @@ class TestItem(unittest.TestCase):
                 child1,
             ),
         )
-        root.update()
+        root.compute()
         self.assertEqual(root.v1_, 1)
         self.assertEqual(root.v2_, 3)
         self.assertEqual(child1.v1_, 6)
@@ -151,7 +216,7 @@ class TestItem(unittest.TestCase):
                 child1,
             ),
         )
-        root.update()
+        root.compute()
         self.assertEqual(root.v1_, 1)
         self.assertEqual(root.v2_, 3)
         self.assertEqual(child1.v1_, 6)
@@ -170,10 +235,10 @@ class TestItem(unittest.TestCase):
                 child1,
             ),
         )
-        root.update()
+        root.compute()
         root.v1_ = 3
         child1.v2_ = lambda d: d.v1_ + 1
-        root.update()
+        root.compute()
         self.assertEqual(root.v1_, 3)
         self.assertEqual(root.v2_, 5)
         self.assertEqual(child1.v1_, 10)
@@ -200,7 +265,7 @@ class TestItem(unittest.TestCase):
                 child2,
             ),
         )
-        root.update()
+        root.compute()
         self.assertEqual(root.v1_, 1)
         self.assertEqual(root.v2_, 3)
         self.assertEqual(child1.v1_, 6)
@@ -228,9 +293,9 @@ class TestItem(unittest.TestCase):
                 child2,
             ),
         )
-        root.update()
+        root.compute()
         root.v1_ = 2
-        root.update()
+        root.compute()
         self.assertEqual(root.v1_, 2)
         self.assertEqual(root.v2_, 4)
         self.assertEqual(child1.v1_, 8)
@@ -256,7 +321,7 @@ class TestItem(unittest.TestCase):
                 child,
             ),
         )
-        root.update()
+        root.compute()
         self.assertEqual(root.v1_, 1)
         self.assertEqual(child.v1_, 3)
         self.assertEqual(child.v2_, 5)
@@ -281,11 +346,11 @@ class TestItem(unittest.TestCase):
                 child,
             ),
         )
-        root.update()
+        root.compute()
         grandchild.v3_ = lambda d: d.root_item.v1_
         grandchild.v2_ = lambda d: d.parent.v1_ + d.parent.v2_ + d.v3_
         root.v1_ = lambda d: 7
-        root.update()
+        root.compute()
 
         self.assertEqual(root.v1_, 7)
         self.assertEqual(child.v1_, 21)
@@ -295,7 +360,7 @@ class TestItem(unittest.TestCase):
         self.assertEqual(grandchild.v3_, 7)
 
         root.v1_ = 1
-        root.update()
+        root.compute()
 
         self.assertEqual(root.v1_, 1)
         self.assertEqual(child.v1_, 3)
@@ -303,3 +368,9 @@ class TestItem(unittest.TestCase):
         self.assertEqual(grandchild.v1_, 20)
         self.assertEqual(grandchild.v2_, 9)
         self.assertEqual(grandchild.v3_, 1)
+
+    def test_detect_circle(self):
+        FAIL_TEXT = "Circle not detected in time!"
+        wait_with_timeout(FAIL_TEXT, 1, self_circle_case)
+        wait_with_timeout(FAIL_TEXT, 1, inter_circle_case)
+        wait_with_timeout(FAIL_TEXT, 1, long_circle_case)

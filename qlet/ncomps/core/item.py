@@ -3,14 +3,12 @@ import heapq
 from collections import defaultdict, deque
 from enum import Enum, auto
 from inspect import isfunction
+from itertools import repeat
 from typing import Any, Callable, Protocol, Sequence
 
 from typing_extensions import overload
 
 from .null_value import _NullValue
-
-
-__all__ = ["Q", "_QRefHandler"]
 
 
 # built-in function alias
@@ -20,24 +18,12 @@ _id = id
 _PARENT = "parent"
 _SELF = "self"
 
-_PF = "_property_f_"
-
 _NULL = _NullValue()
 
 
-class _Status(Enum):
-    """ Property Status """
-    NULL = auto()
-    UP_TO_DATE = auto()
-    REQUIRES_UPDATE = auto()
-
-    @property
-    def up_to_date(self) -> bool:
-        return self is _Status.UP_TO_DATE
-
-    @property
-    def requires_update(self) -> bool:
-        return self is _Status.REQUIRES_UPDATE
+class CircleException(Exception):
+    """ An exception that represents infinite loop. """
+    pass
 
 
 class Item:
@@ -117,14 +103,14 @@ class Item:
             self._set_key_val(key, value)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        is_user_defined = name[0] != '_' and name[-1] == '_'
+        is_user_defined = (not name.startswith('_')) and name.endswith('_')
         if not is_user_defined:
             return super().__setattr__(name, value)
         else:
             return self._set_key_val(name, value)
 
     def __getattribute__(self, name: str) -> Any:
-        is_user_defined = name[0] != '_' and name[-1] == '_'
+        is_user_defined = (not name.startswith('_')) and name.endswith('_')
         if not is_user_defined:
             return super().__getattribute__(name)
         assert name in self._properties
@@ -141,11 +127,8 @@ class Item:
         assert self.parent is None, "An item can only have one parent in their life."
         self.parent = parent
 
-    def update_self(self) -> None:
-        ...
-
-    def update_children(self) -> None:
-        ...
+    def set_parent(self, parent: Item) -> None:
+        parent.add_child(self)
 
     def _ancestors_dict(self) -> dict[str, Item]:
         mapping: dict[str, Item] = {}
@@ -169,7 +152,7 @@ class Item:
                 mapping[child.peer_id] = child
         return mapping
 
-    def _update_pedigrees(self) -> None:
+    def _compute_pedigrees(self) -> None:
         """ update pedigree for all offsprings but self """
         assert self._pedigree_up_to_date
         if any(
@@ -185,50 +168,27 @@ class Item:
                     child._pedigree = _Pedigree(child, ancestors, peers)
                     child._pedigree_up_to_date = True
         for child in self.children:
-            child._update_pedigrees()
+            child._compute_pedigrees()
 
-    def _update_self_properties(self) -> None:
-        """
-        This method assumes all requirements are up-to-date.
-        """
-        queued_properties: set[_ItemProperty] = set(self._properties.values())
-        queue: deque[_ItemProperty] = deque(list(queued_properties))
+    def _compute_properties(self, queue: deque[tuple[Item, _ItemProperty]]) -> None:
+        last_queue_len = len(queue)
+        loop_count = last_queue_len + 1
         while queue:
-            property = queue.popleft()
-            assert not (property.up_to_date and any(
-                self._pedigree._get_property(req).requires_update
-                for req in property._requirements
-            ))
-            if property.requires_update and any(
-                    self._pedigree._get_property(req).requires_update
-                    for req in property._requirements
-            ):
-                queue.append(property)
-            elif property.requires_update:
-                old_reqs = property.requirements
-                succ, new_reqs = property.try_update(self._pedigree)
-                removed_reqs, added_reqs = old_reqs - new_reqs, new_reqs - old_reqs
-                property.remove_as_dependent(self._pedigree, removed_reqs)
-                property.add_as_dependent(self._pedigree, added_reqs)
-                if not succ:
-                    queue.append(property)
-
-    def _update_children_properties(self) -> None:
-        queued_properties: set[tuple[Item, _ItemProperty]] = set()
-        for child in self.children:
-            for property in child._properties.values():
-                queued_properties.add((child, property))
-        queue: deque[tuple[Item, _ItemProperty]] = deque(list(queued_properties))
-        while queue:
+            loop_count -= 1
+            if loop_count == 0:
+                if last_queue_len == len(queue):
+                    raise CircleException("Dependency circle detected")
+                last_queue_len = len(queue)
+                loop_count = last_queue_len + 1
             item, property = queue.popleft()
             assert not (property.up_to_date and any(
                 item._pedigree._get_property(req).requires_update
                 for req in property._requirements
-            ))
+            ))  # property up-to-date implies no requirement needs update
             if property.requires_update and any(
                     item._pedigree._get_property(req).requires_update
                     for req in property._requirements
-            ):
+            ):  # requirement needs update, computation delayed
                 queue.append((item, property))
             elif property.requires_update:
                 old_reqs = property.requirements
@@ -238,13 +198,29 @@ class Item:
                 property.add_as_dependent(item._pedigree, added_reqs)
                 if not succ:
                     queue.append((item, property))
-        for child in self.children:
-            child._update_children_properties()
 
-    def update(self) -> None:
-        self._update_pedigrees()
-        self._update_self_properties()
-        self._update_children_properties()
+    def _compute_self_properties(self) -> None:
+        """
+        This method assumes all requirements are up-to-date.
+        """
+        queued_properties: set[tuple[Item, _ItemProperty]] = set(zip(repeat(self), self._properties.values()))
+        queue: deque[tuple[Item, _ItemProperty]] = deque(list(queued_properties))
+        self._compute_properties(queue)
+
+    def _compute_children_properties(self) -> None:
+        queued_properties: set[tuple[Item, _ItemProperty]] = set()
+        for child in self.children:
+            for property in child._properties.values():
+                queued_properties.add((child, property))
+        queue: deque[tuple[Item, _ItemProperty]] = deque(list(queued_properties))
+        self._compute_properties(queue)
+        for child in self.children:
+            child._compute_children_properties()
+
+    def compute(self) -> None:
+        self._compute_pedigrees()
+        self._compute_self_properties()
+        self._compute_children_properties()
 
     # def on_size_update(self, width: int, height: int) -> None:
     #     ...
@@ -488,10 +464,10 @@ if __name__ == "__main__":
             item2,
         ),
     )
-    root.update()
+    root.compute()
     print("\n##### Update #####")
     root.v3_ = lambda d: 2 * d.self.v2_ - d.self.v1_
     root.v1_ = lambda d: d.self.v2_ / 2
     root.v2_ = 5
     item2.v2_ = lambda d: d.parent.v1_ * d.item1.v1_
-    root.update()
+    root.compute()
