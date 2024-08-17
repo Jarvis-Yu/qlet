@@ -1,0 +1,4 @@
+# please install also the requirements.txt
+build==0.10.0
+setuptools==67.3.2
+twine==4.0.2

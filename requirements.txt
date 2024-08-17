@@ -1,5 +1,2 @@
-build==0.10.0
 flet>=0.19.0
-setuptools==67.3.2
-twine==4.0.2
 typing-extensions>=4.7.1
