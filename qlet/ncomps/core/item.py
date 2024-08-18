@@ -1,10 +1,10 @@
 from __future__ import annotations
 from collections import deque
-from inspect import isfunction
+from inspect import isfunction, ismethod
 from itertools import repeat
 from typing import Any, Callable, Iterable, Sequence
 
-from typing_extensions import overload
+from typing_extensions import Self
 
 from .cached_classproperty import cached_classproperty
 from .null_value import _NullValue
@@ -105,6 +105,7 @@ class Item:
             assert key not in self._properties, "_add_property() is only responsible for new properties"
         if not isfunction(value):
             self._properties[key] = _ItemProperty(key, value, lambda _: value, True)
+            self.__on_property_value_update(key)
         else:
             self._properties[key] = _ItemProperty(key, _NULL, value, False)
 
@@ -114,6 +115,7 @@ class Item:
         property = self._properties[key]
         if not isfunction(value):
             property.set_new_value(value)
+            self.__on_property_value_update(key)
         else:
             property.set_new_f_value(value)
 
@@ -186,6 +188,13 @@ class Item:
     def __outdate_pedigree(self) -> None:
         self._pedigree_up_to_date = False
 
+    def __on_property_value_update(self, property_name: str) -> None:
+        on_handler_name = f"_on_{property_name}_update"
+        if hasattr(self, on_handler_name):
+            on_handler = getattr(self, on_handler_name)
+            assert ismethod(on_handler), f"attribute {on_handler_name} of {self.__class__.__name__} is supposed to be property update handler (a method)"
+            on_handler()
+
     def __compute_pedigrees(self) -> None:
         """ update pedigree for all offsprings but self """
         assert self._pedigree_up_to_date
@@ -243,7 +252,9 @@ class Item:
                 queue.append((item, property))
             elif property.requires_update:
                 succ = property.try_update(item._pedigree)
-                if not succ:
+                if succ:
+                    item.__on_property_value_update(property.name)
+                else:
                     queue.append((item, property))
 
     def __compute_self_properties(self) -> None:
@@ -284,6 +295,10 @@ class _ItemProperty:
         self._up_to_date = up_to_date
         self._requirements: dict[tuple[str, str], _ItemProperty] = {}
         self._dependents: set[_ItemProperty] = set()
+
+    @property
+    def name(self) -> Any:
+        return self._name
 
     @property
     def value(self) -> Any:

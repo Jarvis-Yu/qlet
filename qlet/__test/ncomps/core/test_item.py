@@ -551,3 +551,19 @@ class TestItem(unittest.TestCase):
         self.assertEqual(root.v1_, 1)
         self.assertEqual(root.a, 2)
         self.assertEqual(root.b, 3)
+
+    def test_on_property_update_handler(self):
+        counter = 0
+        class TmpItem(Item):
+            def _on_v2__update(self) -> None:
+                nonlocal counter
+                counter += 1
+
+        root = TmpItem(
+            root=True,
+            v1_=1,
+            v2_=lambda d: d.v1_ + 1,
+        )
+        self.assertEqual(counter, 0)
+        root.compute()
+        self.assertEqual(counter, 1)
