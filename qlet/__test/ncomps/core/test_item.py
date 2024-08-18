@@ -2,7 +2,8 @@ import multiprocessing
 import queue
 import time
 import unittest
-from typing import Callable
+from functools import cache
+from typing import Callable, Sequence
 
 from qlet.ncomps.core.item import CircleException, Item
 
@@ -530,3 +531,23 @@ class TestItem(unittest.TestCase):
         child.remove_child(grandchild2)
         root.compute()
         self.assertEqual(grandchild1.v1_, 1)
+
+    def test_reserved_proeprty_keyword(self):
+        class TmpItem(Item):
+            @Item.cached_classproperty
+            def _RESERVED_PROPERTY_NAMES(cls) -> set[str]:
+                return super()._RESERVED_PROPERTY_NAMES | {
+                    "a",
+                    "b",
+                }
+
+        root = TmpItem(
+            root=True,
+            v1_=1,
+            a=2,
+            b=lambda d: d.v1_ + d.a,
+        )
+        root.compute()
+        self.assertEqual(root.v1_, 1)
+        self.assertEqual(root.a, 2)
+        self.assertEqual(root.b, 3)

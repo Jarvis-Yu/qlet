@@ -6,6 +6,7 @@ from typing import Any, Callable, Iterable, Sequence
 
 from typing_extensions import overload
 
+from .cached_classproperty import cached_classproperty
 from .null_value import _NullValue
 
 
@@ -28,6 +29,13 @@ class CircleException(Exception):
 
 
 class Item:
+    cached_classproperty = cached_classproperty
+
+    @cached_classproperty
+    def _RESERVED_PROPERTY_NAMES(cls) -> set[str]:
+        """ override to reserve keywords for properties. """
+        return set()
+
     def __init__(
             self,
             id: str | None = None,
@@ -54,12 +62,12 @@ class Item:
         assert not id.endswith('_'), f"id cannot end with '_': {id}"
         assert not bool(id) or id.isidentifier(), f"id is not a valid identifier: {id}"
 
-        self.id = id
-        self.displayed_id = displayed_name
-        self.root = root
+        self._id = id
+        self._displayed_id = displayed_name
+        self._root = root
         self._adopt_id: str | None = None
-        self.children: list[Item] = []
-        self.parent: Item | None = None
+        self._children: list[Item] = []
+        self._parent: Item | None = None
 
         self._properties: dict[str, _ItemProperty] = {}
 
@@ -75,17 +83,26 @@ class Item:
             self.add_child(child)
 
     @property
+    def id(self) -> str:
+        return self._id
+    
+    @property
+    def displayed_id(self) -> str:
+        return self._displayed_id
+
+    @property
     def peer_id(self) -> str:
         if self._adopt_id is None:
-            return self.id
+            return self._id
         return self._adopt_id
 
     def __add_property(self, key: str, value: Any) -> None:
         """ adds a new property to self """
-        assert len(key) > 0, f"Empty key is not allowed: \"{key}\""
-        assert key[0] != '_', f"Self-defined values must not start with '_': \"{key}\""
-        assert key[-1] == '_', f"Self-defined values must end with '_': \"{key}\""
-        assert key not in self._properties, "_add_property() is only responsible for new properties"
+        if key not in type(self)._RESERVED_PROPERTY_NAMES:
+            assert len(key) > 0, f"Empty key is not allowed: \"{key}\""
+            assert key[0] != '_', f"Self-defined values must not start with '_': \"{key}\""
+            assert key[-1] == '_', f"Self-defined values must end with '_': \"{key}\""
+            assert key not in self._properties, "_add_property() is only responsible for new properties"
         if not isfunction(value):
             self._properties[key] = _ItemProperty(key, value, lambda _: value, True)
         else:
@@ -101,24 +118,30 @@ class Item:
             property.set_new_f_value(value)
 
     def __set_key_val(self, key: str, value: Any) -> None:
-            if key not in self._properties:
-                self.__add_property(key, value)
-            else:
-                self.__update_property(key, value)
+        if key not in self._properties:
+            self.__add_property(key, value)
+        else:
+            self.__update_property(key, value)
 
     def __set_kwargs(self, **kwargs) -> None:
         for key, value in kwargs.items():
             self.__set_key_val(key, value)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        is_user_defined = (not name.startswith('_')) and name.endswith('_')
+        is_user_defined = (
+            (not name.startswith('_')) and name.endswith('_')
+            or name in type(self)._RESERVED_PROPERTY_NAMES
+        )
         if not is_user_defined:
             return super().__setattr__(name, value)
         else:
             return self.__set_key_val(name, value)
 
     def __getattribute__(self, name: str) -> Any:
-        is_user_defined = (not name.startswith('_')) and name.endswith('_')
+        is_user_defined = (
+            (not name.startswith('_')) and name.endswith('_')
+            or name in type(self)._RESERVED_PROPERTY_NAMES
+        )
         if not is_user_defined:
             return super().__getattribute__(name)
         assert name in self._properties
@@ -128,34 +151,34 @@ class Item:
         return self._properties[name]
 
     def add_child(self, new_child: Item) -> None:
-        for child in self.children:
+        for child in self._children:
             child.__outdate_pedigree()
-        self.children.append(new_child)
+        self._children.append(new_child)
         new_child.__set_parent(new_child)
 
     def __set_parent(self, parent: Item) -> None:
-        assert self.parent is None, "An item can only have one parent in their life."
-        self.parent = parent
+        assert self._parent is None, "An item can only have one parent in their life."
+        self._parent = parent
 
     def set_parent(self, parent: Item) -> None:
         parent.add_child(self)
 
     def remove_child(self, removed_child: Item) -> None:
-        for child in self.children:
+        for child in self._children:
             child.__outdate_pedigree()
-        self.children.remove(removed_child)
+        self._children.remove(removed_child)
         removed_child.__remove_parent()
 
     def __remove_parent(self) -> None:
-        assert self.parent is not None, "Parent must be present to be removed"
-        self.parent = None
+        assert self._parent is not None, "Parent must be present to be removed"
+        self._parent = None
 
     def remove_parent(self) -> None:
-        self.parent.remove_child(self)
+        self._parent.remove_child(self)
 
     def _children_dict(self) -> dict[str, Item]:
         mapping: dict[str, Item] = {}
-        for child in self.children:
+        for child in self._children:
             if child.peer_id not in mapping:
                 mapping[child.peer_id] = child
         return mapping
@@ -168,17 +191,17 @@ class Item:
         assert self._pedigree_up_to_date
         if any(
             not child._pedigree_up_to_date
-            for child in self.children
+            for child in self._children
         ):
             ancestors = self._pedigree._ancestors.copy()
             ancestors[_PARENT] = self
-            ancestors[self.id] = self
+            ancestors[self._id] = self
             peers = self._children_dict()
-            for child in self.children:
+            for child in self._children:
                 if not child._pedigree_up_to_date:
                     child._pedigree = _Pedigree(child, ancestors, peers)
                     child._pedigree_up_to_date = True
-        for child in self.children:
+        for child in self._children:
             child.__compute_pedigrees()
 
     def __compute_new_requirements(self) -> None:
@@ -194,7 +217,7 @@ class Item:
                         for (k1, k2), p in property.requirements.items()
                 ):
                     property.compute_new_requirements(self._pedigree)
-        for child in self.children:
+        for child in self._children:
             child.__compute_new_requirements()
 
     def __compute_properties(self, queue: deque[tuple[Item, _ItemProperty]]) -> None:
@@ -232,12 +255,12 @@ class Item:
     def __compute_children_properties(self) -> None:
         """ This method assumes all requirements are up-to-date. """
         queued_properties: set[tuple[Item, _ItemProperty]] = set()
-        for child in self.children:
+        for child in self._children:
             for property in child._properties.values():
                 queued_properties.add((child, property))
         queue: deque[tuple[Item, _ItemProperty]] = deque(list(queued_properties))
         self.__compute_properties(queue)
-        for child in self.children:
+        for child in self._children:
             child.__compute_children_properties()
 
     def compute(self) -> None:
@@ -425,6 +448,7 @@ class _ItemHandle:
             self, pedigree: _Pedigree,
     ) -> None:
         self.__pedigree = pedigree
+        self.__item_self = pedigree._get_item(_SELF)
         self.__recording = False
         self.__requirements: set[tuple[str, str]] = set()
         self.__property_handles: dict[str, _PropertyHandle] = {}
@@ -455,7 +479,7 @@ class _ItemHandle:
     def __getattribute__(self, name: str) -> Any:
         if name.startswith('_'):  # private attributes
             return super().__getattribute__(name)
-        if name.endswith('_'):  # direct self property
+        if name.endswith('_') or name in self.__item_self._RESERVED_PROPERTY_NAMES:
             property_handle = self._get_property_handle(_SELF)
             return property_handle.__getattribute__(name)
         return self._get_property_handle(name)
@@ -499,30 +523,19 @@ class _Pedigree:
 
 
 if __name__ == "__main__":
-    item1 = Item(
-        id="item1",
-        v1_=lambda d: d.parent.v1_ + 1,
-        v2_=lambda d: d.self.v1_ + d.item2.v1_,
-    )
-    item2 = Item(
-        id="item2",
-        v1_=lambda d: d.item1.v1_ + 1,
-        v2_=lambda d: d.parent.v3_ + d.item1.v2_,
-    )
-    root = Item(
-        id="root", root=True,
-        v3_=lambda d: d.self.v2_ + d.self.v1_,
-        v2_=lambda d: d.self.v1_ * 3,
-        v1_=2,
-        children=(
-            item1,
-            item2,
-        ),
-    )
-    root.compute()
-    print("\n##### Update #####")
-    root.v3_ = lambda d: 2 * d.self.v2_ - d.self.v1_
-    root.v1_ = lambda d: d.self.v2_ / 2
-    root.v2_ = 5
-    item2.v2_ = lambda d: d.parent.v1_ * d.item1.v1_
-    root.compute()
+    class A:
+        _P = None
+
+        def f(self) -> None:
+            return type(self)._P
+
+        def g(self) -> None:
+            return self._P
+        
+        def __getattribute__(self, name: str) -> Any:
+            print(f"__getattribute__({name})")
+            return super().__getattribute__(name)
+
+    a = A()
+    a.f()
+    a.g()
