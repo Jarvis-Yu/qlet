@@ -17,6 +17,7 @@ class QRootItem(Item):
     @Item.cached_classproperty
     def _RESERVED_PROPERTY_NAMES(cls) -> set[str]:
         return super()._RESERVED_PROPERTY_NAMES | {
+            "global_x", "global_y",
             "height",
             "width", "wrap", "wrap_colour",
         }
@@ -60,6 +61,9 @@ class QRootItem(Item):
         self.height: number = 10
         self.wrap: bool = wrap
         self.wrap_colour: str = wrap_colour
+
+        self.global_x = 0
+        self.global_y = 0
 
     def _init_flet(self) -> None:
         self._container = ft.TransparentPointer(
