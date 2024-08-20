@@ -555,7 +555,7 @@ class TestItem(unittest.TestCase):
     def test_on_property_update_handler(self):
         counter = 0
         class TmpItem(Item):
-            def _on_v2__update(self) -> None:
+            def _on_v2__change(self) -> None:
                 nonlocal counter
                 counter += 1
 

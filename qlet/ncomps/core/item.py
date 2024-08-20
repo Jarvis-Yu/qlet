@@ -178,6 +178,10 @@ class Item:
     def remove_parent(self) -> None:
         self._parent.remove_child(self)
 
+    def add_children(self, new_children: Iterable[Item]) -> None:
+        for child in new_children:
+            self.add_child(child)
+
     def _children_dict(self) -> dict[str, Item]:
         mapping: dict[str, Item] = {}
         for child in self._children:
@@ -189,7 +193,7 @@ class Item:
         self._pedigree_up_to_date = False
 
     def __on_property_value_update(self, property_name: str) -> None:
-        on_handler_name = f"_on_{property_name}_update"
+        on_handler_name = f"_on_{property_name}_change"
         if hasattr(self, on_handler_name):
             on_handler = getattr(self, on_handler_name)
             assert ismethod(on_handler), f"attribute {on_handler_name} of {self.__class__.__name__} is supposed to be property update handler (a method)"
