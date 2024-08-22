@@ -39,6 +39,12 @@ class QItemDefaultVals:
             return d.anchor_left - d.parent.global_x
         elif d.anchor_right is not None:
             return d.anchor_right - d.width - d.parent.global_x
+        if d.align_x is not None:
+            align_x = d.align_x / 2 + 0.5
+            align_centre_x = d.align_centre_x / 2 + 0.5
+            centre_offset = align_centre_x * d.width
+            off_set = align_x * d.parent.width
+            return off_set - centre_offset
         return 0
 
     @staticmethod
@@ -47,23 +53,23 @@ class QItemDefaultVals:
             return d.anchor_top - d.parent.global_y
         elif d.anchor_bottom is not None:
             return d.anchor_bottom - d.height - d.parent.global_y
+        if d.align_y is not None:
+            align_y = d.align_y / 2 + 0.5
+            align_centre_y = d.align_centre_y / 2 + 0.5
+            centre_offset = align_centre_y * d.height
+            off_set = align_y * d.parent.height
+            return off_set - centre_offset
         return 0
 
-    @staticmethod
-    def default_anchor_left(d: _ItemHandle) -> optional_number:
-        return None
-    
-    @staticmethod
-    def default_anchor_top(d: _ItemHandle) -> optional_number:
-        return None
-    
-    @staticmethod
-    def default_anchor_right(d: _ItemHandle) -> optional_number:
-        return None
-    
-    @staticmethod
-    def default_anchor_bottom(d: _ItemHandle) -> optional_number:
-        return None
+    default_anchor_left = None
+    default_anchor_top = None
+    default_anchor_right = None
+    default_anchor_bottom = None
+
+    default_align_centre_x = 0
+    default_align_centre_y = 0
+    default_align_x = None
+    default_align_y = None
 
     default_bgcolour = "#00000000"
 
@@ -93,11 +99,12 @@ class QItemDefaultVals:
 
 
 class QItem(Item):
-    _DEFAULT_VALUES = QItemDefaultVals
+    DEFAULT_VALUES = QItemDefaultVals
 
     @Item.cached_classproperty
     def _RESERVED_PROPERTY_NAMES(cls) -> set[str]:
         return super()._RESERVED_PROPERTY_NAMES | {
+            "align_centre_x", "align_centre_y", "align_x", "align_y",
             "anchor_bottom", "anchor_left", "anchor_right", "anchor_top",
             "bgcolour", "bottom",
             "global_x", "global_y",
@@ -127,12 +134,35 @@ class QItem(Item):
             anchor_top: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_top,
             anchor_right: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_right,
             anchor_bottom: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_bottom,
+            align_centre_x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_align_centre_x,
+            align_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_align_centre_y,
+            align_x: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_x,
+            align_y: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_y,
 
             # appearance
             bgcolour: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_bgcolour,
 
             **kwargs
     ) -> None:
+        """
+        :param id: The id of the item, used to reference the item by its peers or offspring.
+        :param children: The children of the item, which are items that are contained within the item.
+        :param width: The width of the item.
+        :param height: The height of the item.
+        :param implicit_width: The width of the item if width is not defined by any means.
+        :param implicit_height: The height of the item if height is not defined by any means.
+        :param x: The x coordinate of the item.
+        :param y: The y coordinate of the item.
+        :param anchor_left: The global x coordinate of the left side of the item.
+        :param anchor_top: The global y coordinate of the top side of the item.
+        :param anchor_right: The global x coordinate of the right side of the item.
+        :param anchor_bottom: The global y coordinate of the bottom side of the item.
+        :param align_centre_x: The centre of alignment of the item on the x axis. -1 to 1 from left to right.
+        :param align_centre_y: The centre of alignment of the item on the y axis. -1 to 1 from top to bottom.
+        :param align_x: The alignment of the item in its parent. -1 to 1 from left to right.
+        :param align_y: The alignment of the item in its parent. -1 to 1 from top to bottom.
+        :param bgcolour: The background colour of the item.
+        """
         self._frame = ft.Stack(expand=True)
 
         super().__init__(
@@ -154,6 +184,10 @@ class QItem(Item):
         self.anchor_top: optional_number = anchor_top
         self.anchor_right: optional_number = anchor_right
         self.anchor_bottom: optional_number = anchor_bottom
+        self.align_centre_x: number = align_centre_x
+        self.align_centre_y: number = align_centre_y
+        self.align_x: number = align_x
+        self.align_y: number = align_y
 
         self.bgcolour: str = bgcolour
 
@@ -257,14 +291,34 @@ if __name__ == "__main__":
                         x=lambda d: d.width / 2,
                         y=lambda d: d.height / 2,
                         bgcolour="#FF0000",
+                        children=(
+                            QItem(
+                                id="l1_1_1",
+                                width=lambda d: d.parent.width / 2,
+                                height=lambda d: d.parent.height / 2,
+                                x=lambda d: d.width / 2,
+                                y=lambda d: d.height / 2,
+                                bgcolour="#00FF00",
+                            )
+                        ),
                     ),
                     QItem(
                         id="l1_2",
-                        width=lambda d: d.parent.width / 3,
+                        width=lambda d: d.parent.width / 2,
                         anchor_right=lambda d: d.parent.right,
                         anchor_top=lambda d: d.l1_1.bottom,
                         anchor_bottom=lambda d: d.parent.bottom,
                         bgcolour="#00FF00",
+                    ),
+                    QItem(
+                        id="l1_3",
+                        width=lambda d: d.parent.width / 4,
+                        height=lambda d: d.parent.height / 4,
+                        align_centre_x=0.5,
+                        align_centre_y=0.5,
+                        align_x=1,
+                        align_y=1,
+                        bgcolour="#0000FF",
                     )
                 ),
             ),

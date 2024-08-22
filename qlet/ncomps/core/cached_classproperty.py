@@ -10,15 +10,14 @@ class _CachedClassProperty:
 
     def __init__(self, fget):
         self._fget = fget
-        self._cache = _CachedClassProperty._Null.NULL
+        self._cache = {}
 
     def __get__(self, obj, klass=None):
-        if self._cache is not _CachedClassProperty._Null.NULL:
-            return self._cache
         if klass is None:
             klass = type(obj)
-        self._cache = self._fget.__get__(obj, klass)()
-        return self._cache
+        if klass not in self._cache:
+            self._cache[klass] = self._fget.__get__(None, klass)()
+        return self._cache[klass]
 
 
 def cached_classproperty(func) -> _CachedClassProperty:
