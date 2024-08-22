@@ -111,6 +111,7 @@ class QItem(Item):
             "height",
             "implicit_height", "implicit_width",
             "left",
+            "opacity",
             "right",
             "top",
             "visible",
@@ -143,6 +144,7 @@ class QItem(Item):
             # appearance
             bgcolour: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_bgcolour,
             visible: bool | Callable[[_ItemHandle], bool] = True,
+            opacity: number | Callable[[_ItemHandle], number] = 1,
 
             **kwargs
     ) -> None:
@@ -193,6 +195,7 @@ class QItem(Item):
 
         self.bgcolour: str = bgcolour
         self.visible: bool = visible
+        self.opacity: number = opacity
 
         self.global_x: number = QItemDefaultVals.default_global_x
         self.global_y: number = QItemDefaultVals.default_global_y
@@ -241,6 +244,10 @@ class QItem(Item):
     def _on_visible_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] visible: {self.visible}")
         self._container.visible = self.visible
+
+    def _on_opacity_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] opacity: {self.opacity}")
+        self._container.opacity = self.opacity
 
     def add_child(self, new_child: QItem) -> None:
         super().add_child(new_child)
@@ -299,6 +306,7 @@ if __name__ == "__main__":
                         x=lambda d: d.width / 2,
                         y=lambda d: d.height / 2,
                         bgcolour="#FF0000",
+                        opacity=lambda d: min(d.height / d.width, d.width / d.height),
                         children=(
                             QItem(
                                 id="l1_1_1",
