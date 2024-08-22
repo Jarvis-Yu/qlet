@@ -113,6 +113,7 @@ class QItem(Item):
             "left",
             "right",
             "top",
+            "visible",
             "width",
             "x",
             "y",
@@ -141,6 +142,7 @@ class QItem(Item):
 
             # appearance
             bgcolour: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_bgcolour,
+            visible: bool | Callable[[_ItemHandle], bool] = True,
 
             **kwargs
     ) -> None:
@@ -190,6 +192,7 @@ class QItem(Item):
         self.align_y: number = align_y
 
         self.bgcolour: str = bgcolour
+        self.visible: bool = visible
 
         self.global_x: number = QItemDefaultVals.default_global_x
         self.global_y: number = QItemDefaultVals.default_global_y
@@ -232,7 +235,12 @@ class QItem(Item):
         self._l1_conainter.padding.top = self.y
 
     def _on_bgcolour_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] bgcolour: {self.bgcolour}")
         self._container.bgcolor = self.bgcolour
+
+    def _on_visible_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] visible: {self.visible}")
+        self._container.visible = self.visible
 
     def add_child(self, new_child: QItem) -> None:
         super().add_child(new_child)
@@ -299,6 +307,7 @@ if __name__ == "__main__":
                                 x=lambda d: d.width / 2,
                                 y=lambda d: d.height / 2,
                                 bgcolour="#00FF00",
+                                visible=lambda d: d.width > 50,
                             )
                         ),
                     ),

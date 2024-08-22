@@ -114,8 +114,10 @@ class Item:
         assert key in self._properties, "_update_property() is only responsible for updating existing properties"
         property = self._properties[key]
         if not isfunction(value):
+            old_value = property.value
             property.set_new_value(value)
-            self.__on_property_value_update(key)
+            if old_value != value:
+                self.__on_property_value_update(key)
         else:
             property.set_new_f_value(value)
 
@@ -256,11 +258,12 @@ class Item:
             ):  # requirement needs update, computation delayed
                 queue.append((item, property))
             elif property.requires_update:
+                old_value = property.value
                 succ = property.try_update(item._pedigree)
-                if succ:
-                    item.__on_property_value_update(property.name)
-                else:
+                if not succ:
                     queue.append((item, property))
+                elif old_value != property.value:
+                    item.__on_property_value_update(property.name)
 
     def __compute_self_properties(self) -> None:
         """ This method assumes all requirements are up-to-date. """
