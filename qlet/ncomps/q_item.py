@@ -72,6 +72,11 @@ class QItemDefaultVals:
     default_align_y = None
 
     default_bgcolour = "#00000000"
+    default_visible = True
+    default_opacity = 1.0
+    default_rotate_angle = 0.0
+    default_rotate_centre_x = 0.0
+    default_rotate_centre_y = 0.0
 
     @staticmethod
     def default_global_x(d: _ItemHandle) -> number:
@@ -112,7 +117,7 @@ class QItem(Item):
             "implicit_height", "implicit_width",
             "left",
             "opacity",
-            "right",
+            "right", "rotate_angle", "rotate_centre_x", "rotate_centre_y",
             "top",
             "visible",
             "width",
@@ -141,10 +146,13 @@ class QItem(Item):
             align_x: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_x,
             align_y: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_y,
 
-            # appearance
+            # appearance and transformation
             bgcolour: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_bgcolour,
-            visible: bool | Callable[[_ItemHandle], bool] = True,
-            opacity: number | Callable[[_ItemHandle], number] = 1,
+            visible: bool | Callable[[_ItemHandle], bool] = QItemDefaultVals.default_visible,
+            opacity: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_opacity,
+            rotate_angle: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_angle,
+            rotate_centre_x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_centre_x,
+            rotate_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_centre_y,
 
             **kwargs
     ) -> None:
@@ -167,7 +175,7 @@ class QItem(Item):
         :param align_y: The alignment of the item in its parent. -1 to 1 from top to bottom.
         :param bgcolour: The background colour of the item.
         """
-        self._frame = ft.Stack(expand=True)
+        self._frame = ft.Stack()
 
         super().__init__(
             id, False, children,
@@ -196,6 +204,9 @@ class QItem(Item):
         self.bgcolour: str = bgcolour
         self.visible: bool = visible
         self.opacity: number = opacity
+        self.rotate_angle: number = rotate_angle
+        self.rotate_centre_x: number = rotate_centre_x
+        self.rotate_centre_y: number = rotate_centre_y
 
         self.global_x: number = QItemDefaultVals.default_global_x
         self.global_y: number = QItemDefaultVals.default_global_y
@@ -207,7 +218,7 @@ class QItem(Item):
     def _init_flet(self) -> None:
         self._container = ft.Container(
             content=self._frame,
-            expand=True,
+            rotate=ft.Rotate(0, ft.Alignment(0, 0)),
         )
         self._l2_tr_pointer = ft.TransparentPointer(
             content=self._container,
@@ -218,7 +229,6 @@ class QItem(Item):
         )
         self._root_component = ft.TransparentPointer(
             content=self._l1_conainter,
-            expand=True,
         )
 
     def _on_width_change(self) -> None:
@@ -248,6 +258,18 @@ class QItem(Item):
     def _on_opacity_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] opacity: {self.opacity}")
         self._container.opacity = self.opacity
+
+    def _on_rotate_angle_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_angle: {self.rotate_angle}")
+        self._container.rotate.angle = self.rotate_angle
+
+    def _on_rotate_centre_x_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_centre_x: {self.rotate_centre_x}")
+        self._container.rotate.alignment.x = self.rotate_centre_x
+
+    def _on_rotate_centre_y_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_centre_y: {self.rotate_centre_y}")
+        self._container.rotate.alignment.y = self.rotate_centre_y
 
     def add_child(self, new_child: QItem) -> None:
         super().add_child(new_child)
@@ -314,8 +336,11 @@ if __name__ == "__main__":
                                 height=lambda d: d.parent.height / 2,
                                 x=lambda d: d.width / 2,
                                 y=lambda d: d.height / 2,
-                                bgcolour="#00FF00",
+                                bgcolour="#000000",
                                 visible=lambda d: d.width > 50,
+                                rotate_angle=lambda d: d.width / 10,
+                                rotate_centre_x=lambda d: min(d.height / d.width, d.width / d.height),
+                                rotate_centre_y=lambda d: min(d.height / d.width, d.width / d.height),
                             )
                         ),
                     ),

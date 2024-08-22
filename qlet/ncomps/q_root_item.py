@@ -32,7 +32,7 @@ class QRootItem(Item):
 
             **kwargs
     ) -> None:
-        self._frame = ft.Stack(expand=True)
+        self._frame = ft.Stack()
 
         super().__init__(
             id, True, children,
@@ -71,16 +71,15 @@ class QRootItem(Item):
                 content=self._frame,
                 padding=self._padding,
             ),
-            expand=True,
         )
-        self._wrap_right_inner = ft.Container(expand=True)
+        self._wrap_right_inner = ft.Container()
         self._wrap_right = (
             ft.Container(
                 content=self._wrap_right_inner,
                 padding=ft.Padding(left=0, right=-10000, top=0, bottom=-10000),
             )
         )
-        self._wrap_bottom_inner = ft.Container(expand=True)
+        self._wrap_bottom_inner = ft.Container()
         self._wrap_bottom = (
             ft.Container(
                 content=self._wrap_bottom_inner,
@@ -93,7 +92,6 @@ class QRootItem(Item):
                 self._wrap_right,
                 self._wrap_bottom,
             ],
-            expand=True,
         )
 
     def _on_width_change(self) -> None:
