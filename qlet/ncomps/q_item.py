@@ -77,6 +77,11 @@ class QItemDefaultVals:
     default_rotate_angle = 0.0
     default_rotate_centre_x = 0.0
     default_rotate_centre_y = 0.0
+    default_scale = None
+    default_scale_centre_x = 0.0
+    default_scale_centre_y = 0.0
+    default_scale_x = None
+    default_scale_y = None
 
     @staticmethod
     def default_global_x(d: _ItemHandle) -> number:
@@ -118,6 +123,7 @@ class QItem(Item):
             "left",
             "opacity",
             "right", "rotate_angle", "rotate_centre_x", "rotate_centre_y",
+            "scale", "scale_centre_x", "scale_centre_y", "scale_x", "scale_y",
             "top",
             "visible",
             "width",
@@ -153,6 +159,11 @@ class QItem(Item):
             rotate_angle: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_angle,
             rotate_centre_x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_centre_x,
             rotate_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_centre_y,
+            scale: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_scale,
+            scale_centre_x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_scale_centre_x,
+            scale_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_scale_centre_y,
+            scale_x: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_scale_x,
+            scale_y: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_scale_y,
 
             **kwargs
     ) -> None:
@@ -174,6 +185,16 @@ class QItem(Item):
         :param align_x: The alignment of the item in its parent. -1 to 1 from left to right.
         :param align_y: The alignment of the item in its parent. -1 to 1 from top to bottom.
         :param bgcolour: The background colour of the item.
+        :param visible: Whether the item is visible.
+        :param opacity: The opacity of the item (affects children opacity).
+        :param rotate_angle: The angle of rotation of the item.
+        :param rotate_centre_x: The centre of rotation of the item on the x axis. -1 to 1 from left to right.
+        :param rotate_centre_y: The centre of rotation of the item on the y axis. -1 to 1 from top to bottom.
+        :param scale: The scale of the item.
+        :param scale_centre_x: The centre of scaling of the item on the x axis. -1 to 1 from left to right.
+        :param scale_centre_y: The centre of scaling of the item on the y axis. -1 to 1 from top to bottom.
+        :param scale_x: The scale of the item on the x axis.
+        :param scale_y: The scale of the item on the y axis.
         """
         self._frame = ft.Stack()
 
@@ -207,6 +228,11 @@ class QItem(Item):
         self.rotate_angle: number = rotate_angle
         self.rotate_centre_x: number = rotate_centre_x
         self.rotate_centre_y: number = rotate_centre_y
+        self.scale: optional_number = scale
+        self.scale_centre_x: number = scale_centre_x
+        self.scale_centre_y: number = scale_centre_y
+        self.scale_x: optional_number = scale_x
+        self.scale_y: optional_number = scale_y
 
         self.global_x: number = QItemDefaultVals.default_global_x
         self.global_y: number = QItemDefaultVals.default_global_y
@@ -219,6 +245,7 @@ class QItem(Item):
         self._container = ft.Container(
             content=self._frame,
             rotate=ft.Rotate(0, ft.Alignment(0, 0)),
+            scale=ft.Scale(alignment=ft.Alignment(0, 0)),
         )
         self._l2_tr_pointer = ft.TransparentPointer(
             content=self._container,
@@ -270,6 +297,26 @@ class QItem(Item):
     def _on_rotate_centre_y_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_centre_y: {self.rotate_centre_y}")
         self._container.rotate.alignment.y = self.rotate_centre_y
+
+    def _on_scale_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] scale: {self.scale}")
+        self._container.scale.scale = self.scale
+
+    def _on_scale_centre_x_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_centre_x: {self.scale_centre_x}")
+        self._container.scale.alignment.x = self.scale_centre_x
+
+    def _on_scale_centre_y_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_centre_y: {self.scale_centre_y}")
+        self._container.scale.alignment.y = self.scale_centre_y
+
+    def _on_scale_x_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_x: {self.scale_x}")
+        self._container.scale.scale_x = self.scale_x
+
+    def _on_scale_y_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_y: {self.scale_y}")
+        self._container.scale.scale_y = self.scale_y
 
     def add_child(self, new_child: QItem) -> None:
         super().add_child(new_child)
@@ -341,6 +388,7 @@ if __name__ == "__main__":
                                 rotate_angle=lambda d: d.width / 10,
                                 rotate_centre_x=lambda d: min(d.height / d.width, d.width / d.height),
                                 rotate_centre_y=lambda d: min(d.height / d.width, d.width / d.height),
+                                scale=lambda d: d.width / 200,
                             )
                         ),
                     ),
