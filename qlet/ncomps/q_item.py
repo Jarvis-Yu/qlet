@@ -4,7 +4,7 @@ from typing import Callable, Sequence
 import flet as ft
 
 from .core.item import Item, _ItemHandle
-from ._typing_shortcut import number
+from ._typing_shortcut import number, optional_number
 
 
 __all__ = ["QItem"]
@@ -13,10 +13,20 @@ __all__ = ["QItem"]
 class QItemDefaultVals:
     @staticmethod
     def default_width(d: _ItemHandle) -> number:
+        if (
+                d.anchor_left is not None
+                and d.anchor_right is not None
+        ):
+            return d.anchor_right - d.anchor_left
         return d.implicit_width
 
     @staticmethod
     def default_height(d: _ItemHandle) -> number:
+        if (
+                d.anchor_top is not QItemDefaultVals.default_top
+                and d.anchor_bottom is not QItemDefaultVals.default_bottom
+        ):
+            return d.anchor_bottom - d.anchor_top
         return d.implicit_height
 
     default_implicit_width = 10
@@ -25,13 +35,37 @@ class QItemDefaultVals:
 
     @staticmethod
     def default_x(d: _ItemHandle) -> number:
+        if d.anchor_left is not None:
+            return d.anchor_left - d.parent.global_x
+        elif d.anchor_right is not None:
+            return d.anchor_right - d.width - d.parent.global_x
         return 0
 
     @staticmethod
     def default_y(d: _ItemHandle) -> number:
+        if d.anchor_top is not None:
+            return d.anchor_top - d.parent.global_y
+        elif d.anchor_bottom is not None:
+            return d.anchor_bottom - d.height - d.parent.global_y
         return 0
 
-    default_bgcolour = "#FF000000"
+    @staticmethod
+    def default_anchor_left(d: _ItemHandle) -> optional_number:
+        return None
+    
+    @staticmethod
+    def default_anchor_top(d: _ItemHandle) -> optional_number:
+        return None
+    
+    @staticmethod
+    def default_anchor_right(d: _ItemHandle) -> optional_number:
+        return None
+    
+    @staticmethod
+    def default_anchor_bottom(d: _ItemHandle) -> optional_number:
+        return None
+
+    default_bgcolour = "#00000000"
 
     @staticmethod
     def default_global_x(d: _ItemHandle) -> number:
@@ -41,6 +75,22 @@ class QItemDefaultVals:
     def default_global_y(d: _ItemHandle) -> number:
         return d.parent.global_y + d.y
 
+    @staticmethod
+    def default_left(d: _ItemHandle) -> number:
+        return d.global_x
+
+    @staticmethod
+    def default_top(d: _ItemHandle) -> number:
+        return d.global_y
+
+    @staticmethod
+    def default_right(d: _ItemHandle) -> number:
+        return d.global_x + d.width
+    
+    @staticmethod
+    def default_bottom(d: _ItemHandle) -> number:
+        return d.global_y + d.height
+
 
 class QItem(Item):
     _DEFAULT_VALUES = QItemDefaultVals
@@ -48,10 +98,14 @@ class QItem(Item):
     @Item.cached_classproperty
     def _RESERVED_PROPERTY_NAMES(cls) -> set[str]:
         return super()._RESERVED_PROPERTY_NAMES | {
-            "bgcolour",
+            "anchor_bottom", "anchor_left", "anchor_right", "anchor_top",
+            "bgcolour", "bottom",
             "global_x", "global_y",
             "height",
             "implicit_height", "implicit_width",
+            "left",
+            "right",
+            "top",
             "width",
             "x",
             "y",
@@ -69,6 +123,10 @@ class QItem(Item):
             implicit_height: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_implicit_height,
             x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_x,
             y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_y,
+            anchor_left: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_left,
+            anchor_top: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_top,
+            anchor_right: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_right,
+            anchor_bottom: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_bottom,
 
             # appearance
             bgcolour: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_bgcolour,
@@ -92,11 +150,19 @@ class QItem(Item):
         self.implicit_height: number = implicit_height
         self.x: number = x
         self.y: number = y
+        self.anchor_left: optional_number = anchor_left
+        self.anchor_top: optional_number = anchor_top
+        self.anchor_right: optional_number = anchor_right
+        self.anchor_bottom: optional_number = anchor_bottom
 
         self.bgcolour: str = bgcolour
 
-        self.global_x = QItemDefaultVals.default_global_x
-        self.global_y = QItemDefaultVals.default_global_y
+        self.global_x: number = QItemDefaultVals.default_global_x
+        self.global_y: number = QItemDefaultVals.default_global_y
+        self.left: number = QItemDefaultVals.default_left
+        self.top: number = QItemDefaultVals.default_top
+        self.right: number = QItemDefaultVals.default_right
+        self.bottom: number = QItemDefaultVals.default_bottom
 
     def _init_flet(self) -> None:
         self._container = ft.Container(
@@ -177,7 +243,7 @@ if __name__ == "__main__":
             page.update()
             exit()
         root_item = QRootItem.auto_init_page(page=page, wrap=True, wrap_colour="#2F2F2F")
-        root_item.add_child(
+        root_item.add_children((
             QItem(
                 id="l1",
                 width=lambda d: d.parent.width / 1,
@@ -185,16 +251,24 @@ if __name__ == "__main__":
                 bgcolour="#FFFFFF",
                 children=(
                     QItem(
-                        id="l2",
+                        id="l1_1",
                         width=lambda d: d.parent.width / 2,
                         height=lambda d: d.parent.height / 2,
                         x=lambda d: d.width / 2,
                         y=lambda d: d.height / 2,
                         bgcolour="#FF0000",
                     ),
+                    QItem(
+                        id="l1_2",
+                        width=lambda d: d.parent.width / 3,
+                        anchor_right=lambda d: d.parent.right,
+                        anchor_top=lambda d: d.l1_1.bottom,
+                        anchor_bottom=lambda d: d.parent.bottom,
+                        bgcolour="#00FF00",
+                    )
                 ),
-            )
-        )
+            ),
+        ))
         root_item.compute()
         page.update()
 

@@ -241,7 +241,8 @@ class Item:
             loop_count -= 1
             if loop_count == 0:
                 if last_queue_len == len(queue):
-                    raise CircleException("Dependency circle detected")
+                    ss = ', '.join(f'{item.displayed_id}.{property.name}' for item, property in queue)
+                    raise CircleException(f"Dependency circle detected in properties: {ss}")
                 last_queue_len = len(queue)
                 loop_count = last_queue_len + 1
             item, property = queue.popleft()
