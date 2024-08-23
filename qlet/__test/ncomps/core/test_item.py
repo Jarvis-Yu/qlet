@@ -567,3 +567,51 @@ class TestItem(unittest.TestCase):
         self.assertEqual(counter, 0)
         root.compute()
         self.assertEqual(counter, 1)
+
+    def test_compute_sub_item(self):
+        root = Item(
+            root=True,
+            v1_=1,
+            children=(
+                item1 := Item(
+                    v1_=lambda d: d.item2.v1_ + 1,
+                ),
+                item2 := Item(
+                    id="item2",
+                    v1_=lambda d: d.parent.v1_ + 1,
+                ),
+            ),
+        )
+        root.compute()
+        item1.add_child(
+            item1_1 := Item(
+                v1_=lambda d: d.parent.v1_ + 1,
+            )
+        )
+        item1.compute()
+        self.assertEqual(item1.v1_, 3)
+        self.assertEqual(item1_1.v1_, 4)
+
+        root = Item(
+            root=True,
+            v1_=1,
+            children=(
+                item1 := Item(
+                    v1_=lambda d: d.item2.v1_ + 1,
+                ),
+                Item(
+                    id="item2",
+                    v1_=lambda d: d.parent.v1_ + 1,
+                ),
+            ),
+        )
+        root.compute()
+        item1.add_child(
+            item1_1 := Item(
+                v1_=lambda d: d.parent.v1_ + 1,
+            )
+        )
+        item1.v1_ = lambda d: d.item2.v1_ + 2
+        item1.compute()
+        self.assertEqual(item1.v1_, 4)
+        self.assertEqual(item1_1.v1_, 5)

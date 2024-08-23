@@ -201,6 +201,9 @@ class Item:
             assert ismethod(on_handler), f"attribute {on_handler_name} of {self.__class__.__name__} is supposed to be property update handler (a method)"
             on_handler()
 
+    def _on_children_computed(self) -> None:
+        return None
+
     def __compute_pedigrees(self) -> None:
         """ update pedigree for all offsprings but self """
         assert self._pedigree_up_to_date
@@ -248,10 +251,10 @@ class Item:
                 last_queue_len = len(queue)
                 loop_count = last_queue_len + 1
             item, property = queue.popleft()
-            assert not (property.up_to_date and any(
-                p.requires_update
-                for p in property.requirements.values()
-            ))  # property up-to-date implies no requirement needs update
+            assert not property.up_to_date or all(
+                req.up_to_date
+                for req in property.requirements.values()
+            )
             if property.requires_update and any(
                     p.requires_update
                     for p in property.requirements.values()
@@ -281,6 +284,7 @@ class Item:
         self.__compute_properties(queue)
         for child in self._children:
             child.__compute_children_properties()
+        self._on_children_computed()
 
     def compute(self) -> None:
         self.__compute_pedigrees()

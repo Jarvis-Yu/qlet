@@ -61,6 +61,8 @@ class QItemDefaultVals:
             return off_set - centre_offset
         return 0
 
+    default_z = 0
+
     default_anchor_left = None
     default_anchor_top = None
     default_anchor_right = None
@@ -129,6 +131,7 @@ class QItem(Item):
             "width",
             "x",
             "y",
+            "z",
         }
 
     def __init__(
@@ -143,6 +146,7 @@ class QItem(Item):
             implicit_height: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_implicit_height,
             x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_x,
             y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_y,
+            z: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_z,
             anchor_left: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_left,
             anchor_top: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_top,
             anchor_right: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_right,
@@ -213,6 +217,7 @@ class QItem(Item):
         self.implicit_height: number = implicit_height
         self.x: number = x
         self.y: number = y
+        self.z: number = z
         self.anchor_left: optional_number = anchor_left
         self.anchor_top: optional_number = anchor_top
         self.anchor_right: optional_number = anchor_right
@@ -256,6 +261,7 @@ class QItem(Item):
         )
         self._root_component = ft.TransparentPointer(
             content=self._l1_conainter,
+            data=self,
         )
 
     def _on_width_change(self) -> None:
@@ -317,6 +323,10 @@ class QItem(Item):
     def _on_scale_y_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_y: {self.scale_y}")
         self._container.scale.scale_y = self.scale_y
+
+    def _on_children_computed(self) -> None:
+        super()._on_children_computed()
+        self._frame.controls.sort(key=lambda c: c.data.z)
 
     def add_child(self, new_child: QItem) -> None:
         super().add_child(new_child)
@@ -409,7 +419,38 @@ if __name__ == "__main__":
                         align_x=1,
                         align_y=1,
                         bgcolour="#0000FF",
-                    )
+                    ),
+                    QItem(
+                        id="l1_4",
+                        width=lambda d: d.parent.width,
+                        height=lambda d: d.parent.height,
+                        children=(
+                            QItem(
+                                id="l1_4_1",
+                                width=lambda d: d.parent.width * 3 / 10,
+                                height=lambda d: d.parent.height / 4,
+                                x=lambda d: d.parent.width / 4,
+                                bgcolour="#FF00FF",
+                                z=lambda d: int(d.x) % 3,
+                            ),
+                            QItem(
+                                id="l1_4_2",
+                                width=lambda d: d.l1_4_1.width,
+                                height=lambda d: d.l1_4_1.height,
+                                anchor_left=lambda d: d.l1_4_1.left + d.width / 3,
+                                bgcolour="#BB00BB",
+                                z=lambda d: int(d.x) % 3,
+                            ),
+                            QItem(
+                                id="l1_4_3",
+                                width=lambda d: d.l1_4_1.width,
+                                height=lambda d: d.l1_4_1.height,
+                                anchor_left=lambda d: d.l1_4_2.left + d.width / 3,
+                                bgcolour="#770077",
+                                z=lambda d: int(d.x) % 3,
+                            ),
+                        ),
+                    ),
                 ),
             ),
         ))
