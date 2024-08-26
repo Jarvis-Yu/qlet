@@ -96,6 +96,10 @@ class Item:
             return self._id
         return self._adopt_id
 
+    @property
+    def parent(self) -> Item | None:
+        return self._parent
+
     def __add_property(self, key: str, value: Any) -> None:
         """ adds a new property to self """
         if key not in type(self)._RESERVED_PROPERTY_NAMES:
@@ -158,7 +162,7 @@ class Item:
         for child in self._children:
             child.__outdate_pedigree()
         self._children.append(new_child)
-        new_child.__set_parent(new_child)
+        new_child.__set_parent(self)
 
     def __set_parent(self, parent: Item) -> None:
         assert self._parent is None, "An item can only have one parent in their life."
@@ -200,6 +204,9 @@ class Item:
             on_handler = getattr(self, on_handler_name)
             assert ismethod(on_handler), f"attribute {on_handler_name} of {self.__class__.__name__} is supposed to be property update handler (a method)"
             on_handler()
+
+    def _on_computed(self) -> None:
+        return None
 
     def _on_children_computed(self) -> None:
         return None
@@ -264,6 +271,7 @@ class Item:
                 old_value = property.value
                 succ = property.try_update(item._pedigree)
                 if not succ:
+                    property._value = _NULL
                     queue.append((item, property))
                 elif old_value != property.value:
                     item.__on_property_value_update(property.name)
@@ -273,6 +281,7 @@ class Item:
         queued_properties: set[tuple[Item, _ItemProperty]] = set(zip(repeat(self), self._properties.values()))
         queue: deque[tuple[Item, _ItemProperty]] = deque(list(queued_properties))
         self.__compute_properties(queue)
+        self._on_computed()
 
     def __compute_children_properties(self) -> None:
         """ This method assumes all requirements are up-to-date. """
@@ -283,6 +292,7 @@ class Item:
         queue: deque[tuple[Item, _ItemProperty]] = deque(list(queued_properties))
         self.__compute_properties(queue)
         for child in self._children:
+            child._on_computed()
             child.__compute_children_properties()
         self._on_children_computed()
 

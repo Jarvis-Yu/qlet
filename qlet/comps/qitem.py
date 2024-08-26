@@ -408,3 +408,50 @@ class QItem:
         root_item._add_to_page(page)
         root_item.inited = True
         return root_item
+
+if __name__ == "__main__":
+    def main(page: ft.Page):
+        page.padding = 0
+        root = QItem.init_page(page, "#FFFFFF")
+        root.add_children((
+            QItem(
+                width_pct=0.5,
+                height_pct=0.5,
+                align=QAlign(0.5, 0.5),
+                colour="#FF0000",
+                children=(
+                    QItem(
+                        width=500,
+                        height=10,
+                        colour="#FFFF00",
+                    ),
+                    QItem(
+                        width=50,
+                        height=50,
+                        align=QAlign(0, 0),
+                        colour="#00FF00",
+                    ),
+                    QItem(
+                        width=50,
+                        height=50,
+                        align=QAlign(1, 0),
+                        colour="#00FF00",
+                    ),
+                    QItem(
+                        width=50,
+                        height=50,
+                        align=QAlign(0, 1),
+                        colour="#00FF00",
+                    ),
+                    QItem(
+                        width=50,
+                        height=50,
+                        align=QAlign(1, 1),
+                        colour="#00FF00",
+                    ),
+                ),
+            ),
+        ))
+        page.update()
+
+    ft.app(target=main)

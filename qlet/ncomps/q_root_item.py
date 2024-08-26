@@ -17,8 +17,12 @@ class QRootItem(Item):
     @Item.cached_classproperty
     def _RESERVED_PROPERTY_NAMES(cls) -> set[str]:
         return super()._RESERVED_PROPERTY_NAMES | {
+            "bottom",
             "global_x", "global_y",
             "height",
+            "left",
+            "right",
+            "top",
             "width", "wrap", "wrap_colour",
         }
 
@@ -64,11 +68,30 @@ class QRootItem(Item):
 
         self.global_x = 0
         self.global_y = 0
+        self.left = lambda d: d.global_x
+        self.top = lambda d: d.global_y
+        self.right = lambda d: d.global_x + d.width
+        self.bottom = lambda d: d.global_y + d.height
 
     def _init_flet(self) -> None:
-        self._container = ft.TransparentPointer(
+        self._inner_container = ft.TransparentPointer(
             content=ft.Container(
                 content=self._frame,
+            ),
+        )
+        self._container = ft.TransparentPointer(
+            content=ft.Container(
+                content=ft.Stack(
+                    controls=[
+                        ft.TransparentPointer(
+                            content=ft.Container(
+                                content=self._inner_container,
+                                padding=-10000,
+                                alignment=ft.Alignment(0, 0),
+                            ),
+                        ),
+                    ],
+                ),
                 padding=self._padding,
             ),
         )
@@ -96,11 +119,13 @@ class QRootItem(Item):
 
     def _on_width_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] width: {self.width}")
-        pass
+        self._container.width = self.width
+        # self._inner_container.width = self.width
 
     def _on_height_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] height: {self.height}")
-        pass
+        self._container.height = self.height
+        # self._inner_container.height = self.height
 
     def _on_wrap_change(self) -> None:
         self._wrap_right.visible = self.wrap
@@ -201,3 +226,10 @@ class QRootItem(Item):
         item.__on_page_resize(None)
         return item
 
+
+if __name__ == "__main__":
+    def main(page: ft.Page):
+        page.padding = 0
+        root_item = QRootItem.auto_init_page(page=page, wrap=True, wrap_colour="#2FFF2F")
+
+    ft.app(target=main)
