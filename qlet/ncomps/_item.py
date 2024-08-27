@@ -5,25 +5,17 @@ temporal file for testing
 import flet as ft
 if __name__ == "__main__":
     def main(page: ft.Page):
-        def container(with_radius: bool) -> ft.Container:
-            c = ft.Container(
+        page.add(
+            ft.Container(
+                bgcolor="white",
                 width=200,
                 height=200,
-                bgcolor="#FFFFFF",
-                alignment=ft.Alignment(1.3, 0),
+                padding=ft.Padding(0, 0, 100, 100),
+                # border=ft.border.all(20, "green"),
                 content=ft.Container(
-                    width=100,
-                    height=100,
-                    bgcolor="#FF0000",
+                    bgcolor="red",
                 ),
             )
-            if with_radius:
-                c.border_radius = 0
-            return c
-
-        page.add(
-            container(False),
-            container(True),
         )
         page.update()
 
