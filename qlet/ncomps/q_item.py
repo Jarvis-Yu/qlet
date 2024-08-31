@@ -15,20 +15,28 @@ __all__ = ["QItem"]
 class QItemDefaultVals:
     @staticmethod
     def default_width(d: _ItemHandle) -> number:
-        if (
-                d.anchor_left is not None
-                and d.anchor_right is not None
-        ):
+        if d.anchor_left is not None and d.anchor_right is not None:
             return d.anchor_right - d.anchor_left
+        elif d.expand:
+            if d.anchor_left is not None:
+                return d.parent.width - d.anchor_left
+            elif d.anchor_right is not None:
+                return d.anchor_right
+            else:
+                return d.parent.width
         return d.implicit_width
 
     @staticmethod
     def default_height(d: _ItemHandle) -> number:
-        if (
-                d.anchor_top is not QItemDefaultVals.default_top
-                and d.anchor_bottom is not QItemDefaultVals.default_bottom
-        ):
+        if d.anchor_top is not None and d.anchor_bottom is not None:
             return d.anchor_bottom - d.anchor_top
+        elif d.expand:
+            if d.anchor_top is not None:
+                return d.parent.height - d.anchor_top
+            elif d.anchor_bottom is not None:
+                return d.anchor_bottom
+            else:
+                return d.parent.height
         return d.implicit_height
 
     default_implicit_width = 10
@@ -64,6 +72,7 @@ class QItemDefaultVals:
         return 0
 
     default_z = 0
+    default_expand = False
 
     default_anchor_left = None
     default_anchor_top = None
@@ -171,6 +180,7 @@ class QItem(Item):
             "border_width", "border_width_bottom", "border_width_left",
             "border_width_right", "border_width_top", "bottom",
             "clip_behaviour",
+            "expand",
             "global_x", "global_y",
             "height",
             "implicit_height", "implicit_width",
@@ -201,6 +211,7 @@ class QItem(Item):
             x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_x,
             y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_y,
             z: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_z,
+            expand: bool | Callable[[_ItemHandle], bool] = QItemDefaultVals.default_expand,
             anchor_left: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_left,
             anchor_top: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_top,
             anchor_right: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_right,
@@ -287,6 +298,7 @@ class QItem(Item):
         self.x: number = x
         self.y: number = y
         self.z: number = z
+        self.expand: bool = expand
         self.anchor_left: optional_number = anchor_left
         self.anchor_top: optional_number = anchor_top
         self.anchor_right: optional_number = anchor_right
@@ -493,7 +505,7 @@ if __name__ == "__main__":
                 width=lambda d: d.parent.width,
                 height=lambda d: d.parent.height,
                 bgcolour="#7FFFFFFF",
-                children=(
+                children=[
                     QItem(
                         id="q1",
                         width=lambda d: d.parent.width / 3,
@@ -502,7 +514,7 @@ if __name__ == "__main__":
                         y = 50,
                         bgcolour="#000000",
                         border_radius=lambda d: d.height / 5,
-                        children=(
+                        children=[
                             QItem(
                                 id="q1_1",
                                 width=lambda d: 200,
@@ -512,7 +524,7 @@ if __name__ == "__main__":
                                 border_width_left=-20,
                                 border_width_right=10,
                                 border_radius=10,
-                                children=(
+                                children=[
                                     QItem(
                                         id="q1_1_1",
                                         width=lambda d: 50,
@@ -523,9 +535,9 @@ if __name__ == "__main__":
                                         align_x=-1,
                                         align_y=1,
                                     ),
-                                ),
+                                ],
                             ),
-                        ),
+                        ],
                     ),
                     QItem(
                         id="q2",
@@ -534,8 +546,16 @@ if __name__ == "__main__":
                         anchor_bottom=lambda d: d.parent.bottom,
                         anchor_left=lambda d: d.parent.left,
                         bgcolour="#00FF00",
+                        children=[
+                            QItem(
+                                id="q2_1",
+                                anchor_left=lambda d: d.parent.left + 50,
+                                expand=True,
+                                bgcolour="#3FFF00FF",
+                            ),
+                        ],
                     ),
-                ),
+                ],
             ),
         ])
         root_item.compute()
