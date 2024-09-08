@@ -84,6 +84,12 @@ class QItemDefaultVals:
     default_align_x = None
     default_align_y = None
 
+    default_inset = 0
+    default_inset_left = lambda d: d.inset
+    default_inset_top = lambda d: d.inset
+    default_inset_right = lambda d: d.inset
+    default_inset_bottom = lambda d: d.inset
+
     default_bgcolour = "#00000000"
     default_visible = True
     default_opacity = 1.0
@@ -108,29 +114,12 @@ class QItemDefaultVals:
     default_border_radius = 0
     default_clip_behaviour = ft.ClipBehavior.NONE
 
-    @staticmethod
-    def default_global_x(d: _ItemHandle) -> number:
-        return d.parent.global_x + d.x
-
-    @staticmethod
-    def default_global_y(d: _ItemHandle) -> number:
-        return d.parent.global_y + d.y
-
-    @staticmethod
-    def default_left(d: _ItemHandle) -> number:
-        return d.global_x
-
-    @staticmethod
-    def default_top(d: _ItemHandle) -> number:
-        return d.global_y
-
-    @staticmethod
-    def default_right(d: _ItemHandle) -> number:
-        return d.global_x + d.width
-    
-    @staticmethod
-    def default_bottom(d: _ItemHandle) -> number:
-        return d.global_y + d.height
+    default_global_x = lambda d: d.parent.global_x + d.x
+    default_global_y = lambda d: d.parent.global_y + d.y
+    default_left = lambda d: d.global_x
+    default_top = lambda d: d.global_y
+    default_right = lambda d: d.global_x + d.width
+    default_bottom = lambda d: d.global_y + d.height
 
     @staticmethod
     def default_ready_align_x(d: _ItemHandle) -> number:
@@ -147,23 +136,15 @@ class QItemDefaultVals:
         return random.random()
 
     @staticmethod
-    def default_ready_border_left(d: _ItemHandle) -> number:
-        d.border_width_left, d.border_colour_left
+    def default_ready_border_horizontal(d: _ItemHandle) -> number:
+        d.width
+        d.border_width_left, d.border_width_right, d.border_colour_left, d.border_colour_right
         return random.random()
 
     @staticmethod
-    def default_ready_border_top(d: _ItemHandle) -> number:
-        d.border_width_top, d.border_colour_top
-        return random.random()
-    
-    @staticmethod
-    def default_ready_border_right(d: _ItemHandle) -> number:
-        d.border_width_right, d.border_colour_right
-        return random.random()
-    
-    @staticmethod
-    def default_ready_border_bottom(d: _ItemHandle) -> number:
-        d.border_width_bottom, d.border_colour_bottom
+    def default_ready_border_vertical(d: _ItemHandle) -> number:
+        d.height
+        d.border_width_top, d.border_width_bottom, d.border_colour_top, d.border_colour_bottom
         return random.random()
 
 
@@ -183,11 +164,11 @@ class QItem(Item):
             "expand",
             "global_x", "global_y",
             "height",
-            "implicit_height", "implicit_width",
+            "implicit_height", "implicit_width", "inset", "inset_bottom", "inset_left",
+            "inset_right", "inset_top",
             "left",
             "opacity",
-            "ready_align_x", "ready_align_y", "ready_border_bottom", "ready_border_left",
-            "ready_border_right", "ready_border_top",
+            "ready_align_x", "ready_align_y", "ready_border_horizontal", "ready_border_vertical",
             "right", "rotate_angle", "rotate_centre_x", "rotate_centre_y",
             "scale", "scale_centre_x", "scale_centre_y", "scale_x", "scale_y",
             "top",
@@ -220,6 +201,11 @@ class QItem(Item):
             align_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_align_centre_y,
             align_x: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_x,
             align_y: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_y,
+            inset: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset,
+            inset_left: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset_left,
+            inset_top: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset_top,
+            inset_right: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset_right,
+            inset_bottom: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset_bottom,
 
             # appearance and transformation
             bgcolour: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_bgcolour,
@@ -287,8 +273,9 @@ class QItem(Item):
             **kwargs,
         )
 
-        self._root_component: ft.TransparentPointer
-        self._container: ft.Container
+        self._root_component: ft.Stack
+        self._bg_container: ft.Container
+        self._content_container: ft.Container
         self._init_flet()
 
         self.width: number = width
@@ -307,6 +294,11 @@ class QItem(Item):
         self.align_centre_y: number = align_centre_y
         self.align_x: number = align_x
         self.align_y: number = align_y
+        self.inset: number = inset
+        self.inset_left: number = inset_left
+        self.inset_top: number = inset_top
+        self.inset_right: number = inset_right
+        self.inset_bottom: number = inset_bottom
 
         self.bgcolour: str = bgcolour
         self.visible: bool = visible
@@ -341,42 +333,70 @@ class QItem(Item):
 
         self.ready_align_x: number = QItemDefaultVals.default_ready_align_x
         self.ready_align_y: number = QItemDefaultVals.default_ready_align_y
-        self.ready_border_left: number = QItemDefaultVals.default_ready_border_left
-        self.ready_border_top: number = QItemDefaultVals.default_ready_border_top
-        self.ready_border_right: number = QItemDefaultVals.default_ready_border_right
-        self.ready_border_bottom: number = QItemDefaultVals.default_ready_border_bottom
+        self.ready_border_horizontal: number = QItemDefaultVals.default_ready_border_horizontal
+        self.ready_border_vertical: number = QItemDefaultVals.default_ready_border_vertical
 
     def _init_flet(self) -> None:
-        self._container = ft.Container(
-            content=self._frame,
+        self._bg_container = ft.Container(
             border=ft.Border(),
             rotate=ft.Rotate(0, ft.Alignment(0, 0)),
             scale=ft.Scale(alignment=ft.Alignment(0, 0)),
         )
-        self._l2_tr_pointer = ft.TransparentPointer(
-            content=self._container,
+        self._l2_bg_tr_pointer = ft.TransparentPointer(
+            content=self._bg_container,
         )
-        self._l1_conainter = ft.Container(
-            content=self._l2_tr_pointer,
+        self._l1_bg_conainter = ft.Container(
+            content=self._l2_bg_tr_pointer,
             padding=ft.Padding(0, 0, 0, 0),
             alignment=ft.Alignment(0, 0),
         )
-        self._root_component = ft.TransparentPointer(
-            content=self._l1_conainter,
+        self._l1_bg_tr_pointer = ft.TransparentPointer(
+            content=self._l1_bg_conainter,
+        )
+
+        self._content_container = ft.Container(
+            content=self._frame,
+            rotate=ft.Rotate(0, ft.Alignment(0, 0)),
+            scale=ft.Scale(alignment=ft.Alignment(0, 0)),
+        )
+        self._l2_content_tr_pointer = ft.TransparentPointer(
+            content=self._content_container,
+        )
+        self._l1_content_conainter = ft.Container(
+            content=self._l2_content_tr_pointer,
+            padding=ft.Padding(0, 0, 0, 0),
+            alignment=ft.Alignment(0, 0),
+        )
+        self._l1_content_tr_pointer = ft.TransparentPointer(
+            content=self._l1_content_conainter,
+        )
+        self._root_component = ft.Stack(
+            controls=[
+                self._l1_bg_tr_pointer,
+                self._l1_content_tr_pointer,
+            ],
             data=self,
         )
 
     def _on_width_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] width: {self.width}")
-        self._l2_tr_pointer.width = self.width
-        self._l1_conainter.padding.left = -self.width / 2
-        self._l1_conainter.padding.right = -self.width / 2
+        self._l2_bg_tr_pointer.width = self.width
+        self._l1_bg_conainter.padding.left = -self.width / 2
+        self._l1_bg_conainter.padding.right = -self.width / 2
+
+        self._l2_content_tr_pointer.width = self.width
+        self._l1_content_conainter.padding.left = -self.width / 2
+        self._l1_content_conainter.padding.right = -self.width / 2
 
     def _on_height_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] height: {self.height}")
-        self._l2_tr_pointer.height = self.height
-        self._l1_conainter.padding.top = -self.height / 2
-        self._l1_conainter.padding.bottom = -self.height / 2
+        self._l2_bg_tr_pointer.height = self.height
+        self._l1_bg_conainter.padding.top = -self.height / 2
+        self._l1_bg_conainter.padding.bottom = -self.height / 2
+
+        self._l2_content_tr_pointer.height = self.height
+        self._l1_content_conainter.padding.top = -self.height / 2
+        self._l1_content_conainter.padding.bottom = -self.height / 2
 
     def _on_x_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] x: {self.x}")
@@ -388,101 +408,109 @@ class QItem(Item):
 
     def _on_bgcolour_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] bgcolour: {self.bgcolour}")
-        self._container.bgcolor = self.bgcolour
+        self._bg_container.bgcolor = self.bgcolour
 
     def _on_visible_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] visible: {self.visible}")
-        self._container.visible = self.visible
+        self._root_component.visible = self.visible
 
     def _on_opacity_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] opacity: {self.opacity}")
-        self._container.opacity = self.opacity
+        self._root_component.opacity = self.opacity
+        # self._content_container.opacity = self.opacity
 
     def _on_rotate_angle_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_angle: {self.rotate_angle}")
-        self._container.rotate.angle = self.rotate_angle
+        self._bg_container.rotate.angle = self.rotate_angle
+        self._content_container.rotate.angle = self.rotate_angle
 
     def _on_rotate_centre_x_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_centre_x: {self.rotate_centre_x}")
-        self._container.rotate.alignment.x = self.rotate_centre_x
+        self._bg_container.rotate.alignment.x = self.rotate_centre_x
+        self._content_container.rotate.alignment.x = self.rotate_centre_x
 
     def _on_rotate_centre_y_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_centre_y: {self.rotate_centre_y}")
-        self._container.rotate.alignment.y = self.rotate_centre_y
+        self._bg_container.rotate.alignment.y = self.rotate_centre_y
+        self._content_container.rotate.alignment.y = self.rotate_centre_y
 
     def _on_scale_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale: {self.scale}")
-        self._container.scale.scale = self.scale
+        self._bg_container.scale.scale = self.scale
+        self._content_container.scale.scale = self.scale
 
     def _on_scale_centre_x_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_centre_x: {self.scale_centre_x}")
-        self._container.scale.alignment.x = self.scale_centre_x
+        self._bg_container.scale.alignment.x = self.scale_centre_x
+        self._content_container.scale.alignment.x = self.scale_centre_x
 
     def _on_scale_centre_y_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_centre_y: {self.scale_centre_y}")
-        self._container.scale.alignment.y = self.scale_centre_y
+        self._bg_container.scale.alignment.y = self.scale_centre_y
+        self._content_container.scale.alignment.y = self.scale_centre_y
 
     def _on_scale_x_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_x: {self.scale_x}")
-        self._container.scale.scale_x = self.scale_x
+        self._bg_container.scale.scale_x = self.scale_x
+        self._content_container.scale.scale_x = self.scale_x
 
     def _on_scale_y_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_y: {self.scale_y}")
-        self._container.scale.scale_y = self.scale_y
+        self._bg_container.scale.scale_y = self.scale_y
+        self._content_container.scale.scale_y = self.scale_y
 
     def _on_border_radius_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] border_radius: {self.border_radius}")
-        self._container.border_radius = self.border_radius
+        self._bg_container.border_radius = self.border_radius
+        self._content_container.border_radius = self.border_radius
 
     def _on_clip_behaviour_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] clip_behaviour: {self.clip_behaviour}")
-        self._container.clip_behavior = self.clip_behaviour
+        self._content_container.clip_behavior = self.clip_behaviour
 
     def _on_ready_align_x_change(self) -> None:
         original_centre_x = self.x + 0.5 * self.width
-        parent_border_width_left = max(0, self.parent.border_width_left)
-        parent_border_width_right = max(0, self.parent.border_width_right)
-        horizontal_border_width = parent_border_width_left + parent_border_width_right
-        scale = 1 - horizontal_border_width / self.parent.width
-        half_actual_parent_width = 0.5 * scale * self.parent.width
-        actual_centre_x = original_centre_x - parent_border_width_left - half_actual_parent_width
-        actual_align_x = actual_centre_x / half_actual_parent_width
-        self._l1_conainter.alignment.x = actual_align_x
+        align_x = (original_centre_x / self.parent.width) * 2 - 1
+        self._l1_bg_conainter.alignment.x = align_x
+        self._l1_content_conainter.alignment.x = align_x
     
     def _on_ready_align_y_change(self) -> None:
-        centre_y = self.y + 0.5 * self.height
-        parent_border_width_top = max(0, self.parent.border_width_top)
-        parent_border_width_bottom = max(0, self.parent.border_width_bottom)
-        vertical_border_width = parent_border_width_top + parent_border_width_bottom
-        scale = 1 - vertical_border_width / self.parent.height
-        half_actual_parent_height = 0.5 * scale * self.parent.height
-        actual_centre_y = centre_y - parent_border_width_top - half_actual_parent_height
-        actual_align_y = actual_centre_y / half_actual_parent_height
-        self._l1_conainter.alignment.y = actual_align_y
+        original_centre_y = self.y + 0.5 * self.height
+        align_y = (original_centre_y / self.parent.height) * 2 - 1
+        self._l1_bg_conainter.alignment.y = align_y
+        self._l1_content_conainter.alignment.y = align_y
 
-    def _on_ready_border_left_change(self) -> None:
-        if self.border_width_left <= 0:
-            self._container.border.left = None
+    def _on_ready_border_horizontal_change(self) -> None:
+        border_width_left = self.border_width_left if self.border_width_left > 0 else 0
+        border_width_right = self.border_width_right if self.border_width_right > 0 else 0
+        horizontal_total = border_width_left + border_width_right
+        if horizontal_total > self.width:
+            border_width_left = border_width_left * self.width / horizontal_total
+            border_width_right = border_width_right * self.width / horizontal_total
+        if border_width_left <= 0:
+            self._bg_container.border.left = None
         else:
-            self._container.border.left = ft.BorderSide(self.border_width_left, self.border_colour_left)
-
-    def _on_ready_border_top_change(self) -> None:
-        if self.border_width_top <= 0:
-            self._container.border.top = None
+            self._bg_container.border.left = ft.BorderSide(border_width_left, self.border_colour_left)
+        if border_width_right <= 0:
+            self._bg_container.border.right = None
         else:
-            self._container.border.top = ft.BorderSide(self.border_width_top, self.border_colour_top)
-
-    def _on_ready_border_right_change(self) -> None:
-        if self.border_width_right <= 0:
-            self._container.border.right = None
+            self._bg_container.border.right = ft.BorderSide(border_width_right, self.border_colour_right)
+    
+    def _on_ready_border_vertical_change(self) -> None:
+        border_width_top = self.border_width_top if self.border_width_top > 0 else 0
+        border_width_bottom = self.border_width_bottom if self.border_width_bottom > 0 else 0
+        vertical_total = border_width_top + border_width_bottom
+        if vertical_total > self.height:
+            border_width_top = border_width_top * self.height / vertical_total
+            border_width_bottom = border_width_bottom * self.height / vertical_total
+        if border_width_top <= 0:
+            self._bg_container.border.top = None
         else:
-            self._container.border.right = ft.BorderSide(self.border_width_right, self.border_colour_right)
-
-    def _on_ready_border_bottom_change(self) -> None:
-        if self.border_width_bottom <= 0:
-            self._container.border.bottom = None
+            self._bg_container.border.top = ft.BorderSide(border_width_top, self.border_colour_top)
+        if border_width_bottom <= 0:
+            self._bg_container.border.bottom = None
         else:
-            self._container.border.bottom = ft.BorderSide(self.border_width_bottom, self.border_colour_bottom)
+            self._bg_container.border.bottom = ft.BorderSide(border_width_bottom, self.border_colour_bottom)
 
     def _on_children_computed(self) -> None:
         super()._on_children_computed()
@@ -517,8 +545,8 @@ if __name__ == "__main__":
                         children=[
                             QItem(
                                 id="q1_1",
-                                width=lambda d: 200,
-                                height=lambda d: 200,
+                                width=lambda d: d.parent.width * 0.8,
+                                height=lambda d: d.parent.height * 0.8,
                                 bgcolour="#FF0000",
                                 border_width=30,
                                 border_width_left=-20,
