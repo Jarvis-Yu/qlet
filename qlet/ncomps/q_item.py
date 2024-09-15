@@ -5,7 +5,7 @@ from typing import Callable, Sequence
 import flet as ft
 
 from .core.item import Item, _ItemHandle
-from .core.colour import is_dark, is_light
+from .core.colour import is_light
 from ._typing_shortcut import number, optional_number
 
 
@@ -123,16 +123,24 @@ class QItemDefaultVals:
 
     @staticmethod
     def default_ready_align_x(d: _ItemHandle) -> number:
-        d.parent.border_width_left, d.parent.border_width_right
         d.x, d.width, d.parent.width
-        d.border_width_left, d.border_width_right
         return random.random()
 
     @staticmethod
     def default_ready_align_y(d: _ItemHandle) -> number:
-        d.parent.border_width_top, d.parent.border_width_bottom
         d.y, d.height, d.parent.height
-        d.border_width_top, d.border_width_bottom
+        return random.random()
+
+    @staticmethod
+    def default_ready_bg_align_x(d: _ItemHandle) -> number:
+        d.x, d.width, d.parent.width
+        d.inset_left, d.inset_right
+        return random.random()
+
+    @staticmethod
+    def default_ready_bg_align_y(d: _ItemHandle) -> number:
+        d.y, d.height, d.parent.height
+        d.inset_top, d.inset_bottom
         return random.random()
 
     @staticmethod
@@ -169,6 +177,7 @@ class QItem(Item):
             "left",
             "opacity",
             "ready_align_x", "ready_align_y", "ready_border_horizontal", "ready_border_vertical",
+            "ready_bg_align_x", "ready_bg_align_y",
             "right", "rotate_angle", "rotate_centre_x", "rotate_centre_y",
             "scale", "scale_centre_x", "scale_centre_y", "scale_x", "scale_y",
             "top",
@@ -333,6 +342,8 @@ class QItem(Item):
 
         self.ready_align_x: number = QItemDefaultVals.default_ready_align_x
         self.ready_align_y: number = QItemDefaultVals.default_ready_align_y
+        self.ready_bg_align_x: number = QItemDefaultVals.default_ready_bg_align_x
+        self.ready_bg_align_y: number = QItemDefaultVals.default_ready_bg_align_y
         self.ready_border_horizontal: number = QItemDefaultVals.default_ready_border_horizontal
         self.ready_border_vertical: number = QItemDefaultVals.default_ready_border_vertical
 
@@ -380,20 +391,12 @@ class QItem(Item):
 
     def _on_width_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] width: {self.width}")
-        self._l2_bg_tr_pointer.width = self.width
-        self._l1_bg_conainter.padding.left = -self.width / 2
-        self._l1_bg_conainter.padding.right = -self.width / 2
-
         self._l2_content_tr_pointer.width = self.width
         self._l1_content_conainter.padding.left = -self.width / 2
         self._l1_content_conainter.padding.right = -self.width / 2
 
     def _on_height_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] height: {self.height}")
-        self._l2_bg_tr_pointer.height = self.height
-        self._l1_bg_conainter.padding.top = -self.height / 2
-        self._l1_bg_conainter.padding.bottom = -self.height / 2
-
         self._l2_content_tr_pointer.height = self.height
         self._l1_content_conainter.padding.top = -self.height / 2
         self._l1_content_conainter.padding.bottom = -self.height / 2
@@ -471,22 +474,40 @@ class QItem(Item):
     def _on_ready_align_x_change(self) -> None:
         original_centre_x = self.x + 0.5 * self.width
         align_x = (original_centre_x / self.parent.width) * 2 - 1
-        self._l1_bg_conainter.alignment.x = align_x
         self._l1_content_conainter.alignment.x = align_x
     
     def _on_ready_align_y_change(self) -> None:
         original_centre_y = self.y + 0.5 * self.height
         align_y = (original_centre_y / self.parent.height) * 2 - 1
-        self._l1_bg_conainter.alignment.y = align_y
         self._l1_content_conainter.alignment.y = align_y
+
+    def _on_ready_bg_align_x_change(self) -> None:
+        width = self.width - self.inset_left - self.inset_right
+        original_centre_x = self.x + self.inset_left + 0.5 * width
+        align_x = (original_centre_x / self.parent.width) * 2 - 1
+        self._l2_bg_tr_pointer.width = width
+        self._l1_bg_conainter.padding.left = -width / 2
+        self._l1_bg_conainter.padding.right = -width / 2
+        self._l1_bg_conainter.alignment.x = align_x
+
+    def _on_ready_bg_align_y_change(self) -> None:
+        height = self.height - self.inset_top - self.inset_bottom
+        original_centre_y = self.y + self.inset_top + 0.5 * height
+        align_y = (original_centre_y / self.parent.height) * 2 - 1
+        self._l2_bg_tr_pointer.height = height
+        self._l1_bg_conainter.padding.top = -height / 2
+        self._l1_bg_conainter.padding.bottom = -height / 2
+        self._l1_bg_conainter.alignment.y = align_y
 
     def _on_ready_border_horizontal_change(self) -> None:
         border_width_left = self.border_width_left if self.border_width_left > 0 else 0
         border_width_right = self.border_width_right if self.border_width_right > 0 else 0
         horizontal_total = border_width_left + border_width_right
         if horizontal_total > self.width:
+            # scale down border widths to fit within the width
             border_width_left = border_width_left * self.width / horizontal_total
             border_width_right = border_width_right * self.width / horizontal_total
+
         if border_width_left <= 0:
             self._bg_container.border.left = None
         else:
@@ -562,6 +583,15 @@ if __name__ == "__main__":
                                         align_centre_y=-1,
                                         align_x=-1,
                                         align_y=1,
+                                        children=[
+                                            QItem(
+                                                expand=True,
+                                                opacity=0.5,
+                                                inset=5,
+                                                # scale=2,
+                                                bgcolour="#FFFFFF",
+                                            ),
+                                        ],
                                     ),
                                 ],
                             ),
