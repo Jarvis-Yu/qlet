@@ -22,6 +22,7 @@ class QRootItem(Item):
             "global_x", "global_y",
             "height",
             "left",
+            "padding", "padding_bottom", "padding_left", "padding_right", "padding_top",
             "right",
             "top",
             "width", "wrap", "wrap_colour",
@@ -66,6 +67,12 @@ class QRootItem(Item):
         self.height: number = 10
         self.wrap: bool = wrap
         self.wrap_colour: str = wrap_colour
+
+        self.padding = 0
+        self.padding_left = 0
+        self.padding_top = 0
+        self.padding_right = 0
+        self.padding_bottom = 0
 
         self.global_x = 0
         self.global_y = 0
