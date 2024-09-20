@@ -84,18 +84,12 @@ class QItemDefaultVals:
     default_align_x = None
     default_align_y = None
 
-    default_inset = 0
-    default_inset_left = lambda d: d.inset
-    default_inset_top = lambda d: d.inset
-    default_inset_right = lambda d: d.inset
-    default_inset_bottom = lambda d: d.inset
     default_padding = 0
     default_padding_left = lambda d: d.padding
     default_padding_top = lambda d: d.padding
     default_padding_right = lambda d: d.padding
     default_padding_bottom = lambda d: d.padding
 
-    default_bgcolour = "#00000000"
     default_visible = True
     default_opacity = 1.0
     default_rotate_angle = 0.0
@@ -106,16 +100,6 @@ class QItemDefaultVals:
     default_scale_centre_y = 0.0
     default_scale_x = None
     default_scale_y = None
-    default_border_width = 0
-    default_border_colour = lambda d: "#000000" if is_light(d.bgcolour) else "#FFFFFF"
-    default_border_width_left = lambda d: d.border_width
-    default_border_colour_left = lambda d: d.border_colour
-    default_border_width_top = lambda d: d.border_width
-    default_border_colour_top = lambda d: d.border_colour
-    default_border_width_right = lambda d: d.border_width
-    default_border_colour_right = lambda d: d.border_colour
-    default_border_width_bottom = lambda d: d.border_width
-    default_border_colour_bottom = lambda d: d.border_colour
     default_border_radius = 0
     default_clip_behaviour = ft.ClipBehavior.NONE
 
@@ -138,30 +122,6 @@ class QItemDefaultVals:
         d.padding_top, d.padding_bottom
         return random.random()
 
-    @staticmethod
-    def default_READY_bg_align_x(d: _ItemHandle) -> number:
-        d.x, d.width, d.parent.width
-        d.inset_left, d.inset_right
-        return random.random()
-
-    @staticmethod
-    def default_READY_bg_align_y(d: _ItemHandle) -> number:
-        d.y, d.height, d.parent.height
-        d.inset_top, d.inset_bottom
-        return random.random()
-
-    @staticmethod
-    def default_READY_border_horizontal(d: _ItemHandle) -> number:
-        d.width
-        d.border_width_left, d.border_width_right, d.border_colour_left, d.border_colour_right
-        return random.random()
-
-    @staticmethod
-    def default_READY_border_vertical(d: _ItemHandle) -> number:
-        d.height
-        d.border_width_top, d.border_width_bottom, d.border_colour_top, d.border_colour_bottom
-        return random.random()
-
 
 class QItem(Item):
     DEFAULT_VALUES = QItemDefaultVals
@@ -171,21 +131,16 @@ class QItem(Item):
         return super()._RESERVED_PROPERTY_NAMES | {
             "align_centre_x", "align_centre_y", "align_x", "align_y",
             "anchor_bottom", "anchor_left", "anchor_right", "anchor_top",
-            "bgcolour", "border_colour", "border_colour_bottom", "border_colour_left",
-            "border_colour_right", "border_colour_top", "border_radius",
-            "border_width", "border_width_bottom", "border_width_left",
-            "border_width_right", "border_width_top", "bottom",
+            "border_radius", "bottom",
             "clip_behaviour",
             "expand",
             "global_x", "global_y",
             "height",
-            "implicit_height", "implicit_width", "inset", "inset_bottom", "inset_left",
-            "inset_right", "inset_top",
+            "implicit_height", "implicit_width",
             "left",
             "opacity",
             "padding", "padding_bottom", "padding_left", "padding_right", "padding_top",
             "READY_align_x", "READY_align_y", "READY_border_horizontal", "READY_border_vertical",
-            "READY_bg_align_x", "READY_bg_align_y",
             "right", "rotate_angle", "rotate_centre_x", "rotate_centre_y",
             "scale", "scale_centre_x", "scale_centre_y", "scale_x", "scale_y",
             "top",
@@ -218,11 +173,6 @@ class QItem(Item):
             align_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_align_centre_y,
             align_x: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_x,
             align_y: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_y,
-            inset: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset,
-            inset_left: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset_left,
-            inset_top: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset_top,
-            inset_right: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset_right,
-            inset_bottom: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_inset_bottom,
             padding: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_padding,
             padding_left: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_padding_left,
             padding_top: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_padding_top,
@@ -230,7 +180,6 @@ class QItem(Item):
             padding_bottom: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_padding_bottom,
 
             # appearance and transformation
-            bgcolour: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_bgcolour,
             visible: bool | Callable[[_ItemHandle], bool] = QItemDefaultVals.default_visible,
             opacity: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_opacity,
             rotate_angle: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_angle,
@@ -241,16 +190,6 @@ class QItem(Item):
             scale_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_scale_centre_y,
             scale_x: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_scale_x,
             scale_y: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_scale_y,
-            border_width: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_border_width,
-            border_colour: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_border_colour,
-            border_width_left: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_border_width_left,
-            border_colour_left: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_border_colour_left,
-            border_width_top: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_border_width_top,
-            border_colour_top: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_border_colour_top,
-            border_width_right: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_border_width_right,
-            border_colour_right: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_border_colour_right,
-            border_width_bottom: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_border_width_bottom,
-            border_colour_bottom: str | Callable[[_ItemHandle], str] = QItemDefaultVals.default_border_colour_bottom,
             border_radius: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_border_radius,
             clip_behaviour: ft.ClipBehavior | Callable[[_ItemHandle], ft.ClipBehavior] = QItemDefaultVals.default_clip_behaviour,
 
@@ -273,7 +212,11 @@ class QItem(Item):
         :param align_centre_y: The centre of alignment of the item on the y axis. -1 to 1 from top to bottom.
         :param align_x: The alignment of the item in its parent. -1 to 1 from left to right.
         :param align_y: The alignment of the item in its parent. -1 to 1 from top to bottom.
-        :param bgcolour: The background colour of the item.
+        :param padding: The padding for all child items.
+        :param padding_left: The padding for the left side of the item.
+        :param padding_top: The padding for the top side of the item.
+        :param padding_right: The padding for the right side of the item.
+        :param padding_bottom: The padding for the bottom side of the item.
         :param visible: Whether the item is visible.
         :param opacity: The opacity of the item (affects children opacity).
         :param rotate_angle: The angle of rotation of the item.
@@ -288,16 +231,14 @@ class QItem(Item):
         :param clip_behaviour: The clip behaviour of the item.
         """
         self._frame = ft.Stack()
+        self._root_component: ft.Stack
+        self._content_container: ft.Container
+        self._init_flet()
 
         super().__init__(
             id, False, children,
             **kwargs,
         )
-
-        self._root_component: ft.Stack
-        self._bg_container: ft.Container
-        self._content_container: ft.Container
-        self._init_flet()
 
         self.width: number = width
         self.height: number = height
@@ -315,18 +256,12 @@ class QItem(Item):
         self.align_centre_y: number = align_centre_y
         self.align_x: number = align_x
         self.align_y: number = align_y
-        self.inset: number = inset
-        self.inset_left: number = inset_left
-        self.inset_top: number = inset_top
-        self.inset_right: number = inset_right
-        self.inset_bottom: number = inset_bottom
         self.padding: number = padding
         self.padding_left: number = padding_left
         self.padding_top: number = padding_top
         self.padding_right: number = padding_right
         self.padding_bottom: number = padding_bottom
 
-        self.bgcolour: str = bgcolour
         self.visible: bool = visible
         self.opacity: number = opacity
         self.rotate_angle: number = rotate_angle
@@ -337,16 +272,6 @@ class QItem(Item):
         self.scale_centre_y: number = scale_centre_y
         self.scale_x: optional_number = scale_x
         self.scale_y: optional_number = scale_y
-        self.border_width: number = border_width
-        self.border_colour: str = border_colour
-        self.border_width_left: number = border_width_left
-        self.border_colour_left: str = border_colour_left
-        self.border_width_top: number = border_width_top
-        self.border_colour_top: str = border_colour_top
-        self.border_width_right: number = border_width_right
-        self.border_colour_right: str = border_colour_right
-        self.border_width_bottom: number = border_width_bottom
-        self.border_colour_bottom: str = border_colour_bottom
         self.border_radius: number = border_radius
         self.clip_behaviour: ft.ClipBehavior = clip_behaviour
 
@@ -359,29 +284,8 @@ class QItem(Item):
 
         self.READY_align_x: number = QItemDefaultVals.default_READY_align_x
         self.READY_align_y: number = QItemDefaultVals.default_READY_align_y
-        self.READY_bg_align_x: number = QItemDefaultVals.default_READY_bg_align_x
-        self.READY_bg_align_y: number = QItemDefaultVals.default_READY_bg_align_y
-        self.READY_border_horizontal: number = QItemDefaultVals.default_READY_border_horizontal
-        self.READY_border_vertical: number = QItemDefaultVals.default_READY_border_vertical
 
     def _init_flet(self) -> None:
-        self._bg_container = ft.Container(
-            border=ft.Border(),
-            rotate=ft.Rotate(0, ft.Alignment(0, 0)),
-            scale=ft.Scale(alignment=ft.Alignment(0, 0)),
-        )
-        self._l2_bg_tr_pointer = ft.TransparentPointer(
-            content=self._bg_container,
-        )
-        self._l1_bg_conainter = ft.Container(
-            content=self._l2_bg_tr_pointer,
-            padding=ft.Padding(0, 0, 0, 0),
-            alignment=ft.Alignment(0, 0),
-        )
-        self._l1_bg_tr_pointer = ft.TransparentPointer(
-            content=self._l1_bg_conainter,
-        )
-
         self._content_container = ft.Container(
             content=self._frame,
             rotate=ft.Rotate(0, ft.Alignment(0, 0)),
@@ -400,7 +304,6 @@ class QItem(Item):
         )
         self._root_component = ft.Stack(
             controls=[
-                self._l1_bg_tr_pointer,
                 self._l1_content_tr_pointer,
             ],
             data=self,
@@ -422,10 +325,6 @@ class QItem(Item):
         # print(f"{self.__class__.__name__}[{self.displayed_id}] y: {self.y}")
         pass
 
-    def _on_bgcolour_change(self) -> None:
-        # print(f"{self.__class__.__name__}[{self.displayed_id}] bgcolour: {self.bgcolour}")
-        self._bg_container.bgcolor = self.bgcolour
-
     def _on_visible_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] visible: {self.visible}")
         self._root_component.visible = self.visible
@@ -437,47 +336,38 @@ class QItem(Item):
 
     def _on_rotate_angle_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_angle: {self.rotate_angle}")
-        self._bg_container.rotate.angle = self.rotate_angle
         self._content_container.rotate.angle = self.rotate_angle
 
     def _on_rotate_centre_x_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_centre_x: {self.rotate_centre_x}")
-        self._bg_container.rotate.alignment.x = self.rotate_centre_x
         self._content_container.rotate.alignment.x = self.rotate_centre_x
 
     def _on_rotate_centre_y_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] rotate_centre_y: {self.rotate_centre_y}")
-        self._bg_container.rotate.alignment.y = self.rotate_centre_y
         self._content_container.rotate.alignment.y = self.rotate_centre_y
 
     def _on_scale_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale: {self.scale}")
-        self._bg_container.scale.scale = self.scale
         self._content_container.scale.scale = self.scale
 
     def _on_scale_centre_x_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_centre_x: {self.scale_centre_x}")
-        self._bg_container.scale.alignment.x = self.scale_centre_x
         self._content_container.scale.alignment.x = self.scale_centre_x
 
     def _on_scale_centre_y_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_centre_y: {self.scale_centre_y}")
-        self._bg_container.scale.alignment.y = self.scale_centre_y
         self._content_container.scale.alignment.y = self.scale_centre_y
 
     def _on_scale_x_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_x: {self.scale_x}")
-        self._bg_container.scale.scale_x = self.scale_x
         self._content_container.scale.scale_x = self.scale_x
 
     def _on_scale_y_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] scale_y: {self.scale_y}")
-        self._bg_container.scale.scale_y = self.scale_y
         self._content_container.scale.scale_y = self.scale_y
 
     def _on_border_radius_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] border_radius: {self.border_radius}")
-        self._bg_container.border_radius = self.border_radius
         self._content_container.border_radius = self.border_radius
 
     def _on_clip_behaviour_change(self) -> None:
@@ -506,157 +396,12 @@ class QItem(Item):
         align_y = (original_centre_y / parent_height) * 2 - 1
         self._l1_content_conainter.alignment.y = align_y
 
-    def _on_READY_bg_align_x_change(self) -> None:
-        width = self.width - self.inset_left - self.inset_right
-        self._l2_bg_tr_pointer.width = width
-        self._l1_bg_conainter.padding.left = -width / 2
-        self._l1_bg_conainter.padding.right = -width / 2
-
-        original_centre_x = self.x + self.inset_left + 0.5 * width
-        parent_width = self.parent.width - self.parent.padding_left - self.parent.padding_right
-        align_x = (original_centre_x / parent_width) * 2 - 1
-        self._l1_bg_conainter.alignment.x = align_x
-
-    def _on_READY_bg_align_y_change(self) -> None:
-        height = self.height - self.inset_top - self.inset_bottom
-        self._l2_bg_tr_pointer.height = height
-        self._l1_bg_conainter.padding.top = -height / 2
-        self._l1_bg_conainter.padding.bottom = -height / 2
-
-        original_centre_y = self.y + self.inset_top + 0.5 * height
-        parent_height = self.parent.height - self.parent.padding_top - self.parent.padding_bottom
-        align_y = (original_centre_y / parent_height) * 2 - 1
-        self._l1_bg_conainter.alignment.y = align_y
-
-    def _on_READY_border_horizontal_change(self) -> None:
-        border_width_left = self.border_width_left if self.border_width_left > 0 else 0
-        border_width_right = self.border_width_right if self.border_width_right > 0 else 0
-        horizontal_total = border_width_left + border_width_right
-        if horizontal_total > self.width:
-            # scale down border widths to fit within the width
-            border_width_left = border_width_left * self.width / horizontal_total
-            border_width_right = border_width_right * self.width / horizontal_total
-
-        if border_width_left <= 0:
-            self._bg_container.border.left = None
-        else:
-            self._bg_container.border.left = ft.BorderSide(border_width_left, self.border_colour_left)
-        if border_width_right <= 0:
-            self._bg_container.border.right = None
-        else:
-            self._bg_container.border.right = ft.BorderSide(border_width_right, self.border_colour_right)
-    
-    def _on_READY_border_vertical_change(self) -> None:
-        border_width_top = self.border_width_top if self.border_width_top > 0 else 0
-        border_width_bottom = self.border_width_bottom if self.border_width_bottom > 0 else 0
-        vertical_total = border_width_top + border_width_bottom
-        if vertical_total > self.height:
-            border_width_top = border_width_top * self.height / vertical_total
-            border_width_bottom = border_width_bottom * self.height / vertical_total
-        if border_width_top <= 0:
-            self._bg_container.border.top = None
-        else:
-            self._bg_container.border.top = ft.BorderSide(border_width_top, self.border_colour_top)
-        if border_width_bottom <= 0:
-            self._bg_container.border.bottom = None
-        else:
-            self._bg_container.border.bottom = ft.BorderSide(border_width_bottom, self.border_colour_bottom)
-
     def _on_children_computed(self) -> None:
         super()._on_children_computed()
         def safe_z(control: ft.Control) -> number:
             return control.data.z if hasattr(control.data, "z") else 0
-        self._frame.controls.sort(key=lambda c: safe_z(c))
+        self._frame.controls.sort(key=safe_z)
 
     def add_child(self, new_child: QItem) -> None:
         super().add_child(new_child)
         self._frame.controls.append(new_child._root_component)
-
-
-if __name__ == "__main__":
-    from .q_root_item import QRootItem
-
-    def main(page: ft.Page):
-        page.padding = 0
-        root_item = QRootItem.auto_init_page(page=page, wrap=True, wrap_colour="#2F2F2F")
-        root_item.add_children([
-            QItem(
-                id="q",
-                width=lambda d: d.parent.width,
-                height=lambda d: d.parent.height,
-                bgcolour="#7FFFFFFF",
-                children=[
-                    QItem(
-                        id="q1",
-                        width=lambda d: d.parent.width / 3,
-                        height=lambda d: d.parent.height / 3,
-                        x = 50,
-                        y = 50,
-                        bgcolour="#000000",
-                        border_radius=lambda d: d.height / 5,
-                        children=[
-                            QItem(
-                                id="q1_1",
-                                width=lambda d: d.parent.width * 0.8,
-                                height=lambda d: d.parent.height * 0.8,
-                                bgcolour="#FF0000",
-                                border_width=30,
-                                border_width_left=-20,
-                                border_width_right=10,
-                                border_radius=10,
-                                children=[
-                                    QItem(
-                                        id="q1_1_1",
-                                        width=lambda d: 50,
-                                        height=lambda d: 50,
-                                        bgcolour="#0000FF",
-                                        align_centre_x=-1,
-                                        align_centre_y=-1,
-                                        align_x=-1,
-                                        align_y=1,
-                                        padding=15,
-                                        children=[
-                                            QItem(
-                                                id="q1_1_1_1",
-                                                expand=True,
-                                                opacity=0.5,
-                                                inset=5,
-                                                bgcolour="#FFFFFF",
-                                                children=[
-                                                    QItem(
-                                                        id="q1_1_1_1_1",
-                                                        expand=True,
-                                                        opacity=0.3,
-                                                        bgcolour="#000000",
-                                                    ),
-                                                ],
-                                            ),
-                                        ],
-                                    ),
-                                ],
-                            ),
-                        ],
-                    ),
-                    QItem(
-                        id="q2",
-                        width=lambda d: d.parent.width * 0.85,
-                        height=lambda d: d.parent.height * 0.1,
-                        anchor_bottom=lambda d: d.parent.bottom,
-                        anchor_left=lambda d: d.parent.left,
-                        bgcolour="#00FF00",
-                        children=[
-                            QItem(
-                                id="q2_1",
-                                anchor_left=lambda d: d.parent.left + 50,
-                                expand=True,
-                                bgcolour="#3FFF00FF",
-                            ),
-                        ],
-                    ),
-                ],
-            ),
-        ])
-        root_item.compute()
-        page.update()
-
-    ft.app(target=main)
