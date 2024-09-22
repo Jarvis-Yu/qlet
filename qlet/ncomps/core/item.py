@@ -462,7 +462,7 @@ class _PropertyHandle:
     It can record all accesses.
     """
     def __init__(
-            self, access_name: str, item_handle: _ItemHandle, item: Item,
+            self, access_name: str, item_handle: ItemHandle, item: Item,
     ):
         self.__access_name = access_name
         self.__item_handle = item_handle
@@ -476,7 +476,7 @@ class _PropertyHandle:
         return getattr(self.__item, name)
 
 
-class _ItemHandle:
+class ItemHandle:
     """
     This is a proxy providing access to accessible items in the pedigree.
     It can record all accesses.
@@ -538,8 +538,8 @@ class _Pedigree:
 
         self._self_alias = {_SELF, self._self.peer_id}
 
-    def handle(self) -> _ItemHandle:
-        return _ItemHandle(self)
+    def handle(self) -> ItemHandle:
+        return ItemHandle(self)
 
     def _get_item(self, key: str) -> Item:
         if key in self._self_alias:

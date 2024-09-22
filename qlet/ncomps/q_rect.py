@@ -4,13 +4,13 @@ from typing import Callable, Sequence
 
 import flet as ft
 
-from .core.item import Item, _ItemHandle
+from .core.item import Item, ItemHandle
 from .core.colour import is_light
 from ._typing_shortcut import number, optional_number
 from .q_item import QItem
 
 
-__all__ = ["QItem"]
+__all__ = ["QRect"]
 
 
 class QRectDefaultVals(QItem.DEFAULT_VALUES):
@@ -33,28 +33,31 @@ class QRectDefaultVals(QItem.DEFAULT_VALUES):
     default_border_colour_bottom = lambda d: d.border_colour
 
     @staticmethod
-    def default_READY_bg_align_x(d: _ItemHandle) -> number:
+    def default_READY_bg_align_x(d: ItemHandle) -> number:
         d.x, d.width, d.parent.width
         d.inset_left, d.inset_right
         return random.random()
 
     @staticmethod
-    def default_READY_bg_align_y(d: _ItemHandle) -> number:
+    def default_READY_bg_align_y(d: ItemHandle) -> number:
         d.y, d.height, d.parent.height
         d.inset_top, d.inset_bottom
         return random.random()
 
     @staticmethod
-    def default_READY_border_horizontal(d: _ItemHandle) -> number:
+    def default_READY_border_horizontal(d: ItemHandle) -> number:
         d.width
         d.border_width_left, d.border_width_right, d.border_colour_left, d.border_colour_right
         return random.random()
 
     @staticmethod
-    def default_READY_border_vertical(d: _ItemHandle) -> number:
+    def default_READY_border_vertical(d: ItemHandle) -> number:
         d.height
         d.border_width_top, d.border_width_bottom, d.border_colour_top, d.border_colour_bottom
         return random.random()
+
+
+DEFAULT_VALUES = QRectDefaultVals
 
 
 class QRect(QItem):
@@ -77,63 +80,78 @@ class QRect(QItem):
             children: Item | Sequence[Item] = (),
             
             # position and sizing
-            width: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_width,
-            height: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_height,
-            implicit_width: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_implicit_width,
-            implicit_height: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_implicit_height,
-            x: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_x,
-            y: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_y,
-            z: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_z,
-            expand: bool | Callable[[_ItemHandle], bool] = QRectDefaultVals.default_expand,
-            anchor_left: optional_number | Callable[[_ItemHandle], optional_number] = QRectDefaultVals.default_anchor_left,
-            anchor_top: optional_number | Callable[[_ItemHandle], optional_number] = QRectDefaultVals.default_anchor_top,
-            anchor_right: optional_number | Callable[[_ItemHandle], optional_number] = QRectDefaultVals.default_anchor_right,
-            anchor_bottom: optional_number | Callable[[_ItemHandle], optional_number] = QRectDefaultVals.default_anchor_bottom,
-            align_centre_x: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_align_centre_x,
-            align_centre_y: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_align_centre_y,
-            align_x: optional_number | Callable[[_ItemHandle], optional_number] = QRectDefaultVals.default_align_x,
-            align_y: optional_number | Callable[[_ItemHandle], optional_number] = QRectDefaultVals.default_align_y,
-            inset: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_inset,
-            inset_left: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_inset_left,
-            inset_top: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_inset_top,
-            inset_right: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_inset_right,
-            inset_bottom: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_inset_bottom,
-            padding: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_padding,
-            padding_left: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_padding_left,
-            padding_top: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_padding_top,
-            padding_right: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_padding_right,
-            padding_bottom: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_padding_bottom,
+            inset: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_inset,
+            inset_left: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_inset_left,
+            inset_top: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_inset_top,
+            inset_right: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_inset_right,
+            inset_bottom: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_inset_bottom,
 
             # appearance and transformation
-            bgcolour: str | Callable[[_ItemHandle], str] = QRectDefaultVals.default_bgcolour,
-            visible: bool | Callable[[_ItemHandle], bool] = QRectDefaultVals.default_visible,
-            opacity: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_opacity,
-            rotate_angle: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_rotate_angle,
-            rotate_centre_x: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_rotate_centre_x,
-            rotate_centre_y: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_rotate_centre_y,
-            scale: optional_number | Callable[[_ItemHandle], optional_number] = QRectDefaultVals.default_scale,
-            scale_centre_x: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_scale_centre_x,
-            scale_centre_y: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_scale_centre_y,
-            scale_x: optional_number | Callable[[_ItemHandle], optional_number] = QRectDefaultVals.default_scale_x,
-            scale_y: optional_number | Callable[[_ItemHandle], optional_number] = QRectDefaultVals.default_scale_y,
-            border_width: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_border_width,
-            border_colour: str | Callable[[_ItemHandle], str] = QRectDefaultVals.default_border_colour,
-            border_width_left: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_border_width_left,
-            border_colour_left: str | Callable[[_ItemHandle], str] = QRectDefaultVals.default_border_colour_left,
-            border_width_top: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_border_width_top,
-            border_colour_top: str | Callable[[_ItemHandle], str] = QRectDefaultVals.default_border_colour_top,
-            border_width_right: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_border_width_right,
-            border_colour_right: str | Callable[[_ItemHandle], str] = QRectDefaultVals.default_border_colour_right,
-            border_width_bottom: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_border_width_bottom,
-            border_colour_bottom: str | Callable[[_ItemHandle], str] = QRectDefaultVals.default_border_colour_bottom,
-            border_radius: number | Callable[[_ItemHandle], number] = QRectDefaultVals.default_border_radius,
-            clip_behaviour: ft.ClipBehavior | Callable[[_ItemHandle], ft.ClipBehavior] = QRectDefaultVals.default_clip_behaviour,
+            bgcolour: str | Callable[[ItemHandle], str] = DEFAULT_VALUES.default_bgcolour,
+            border_width: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_border_width,
+            border_colour: str | Callable[[ItemHandle], str] = DEFAULT_VALUES.default_border_colour,
+            border_width_left: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_border_width_left,
+            border_colour_left: str | Callable[[ItemHandle], str] = DEFAULT_VALUES.default_border_colour_left,
+            border_width_top: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_border_width_top,
+            border_colour_top: str | Callable[[ItemHandle], str] = DEFAULT_VALUES.default_border_colour_top,
+            border_width_right: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_border_width_right,
+            border_colour_right: str | Callable[[ItemHandle], str] = DEFAULT_VALUES.default_border_colour_right,
+            border_width_bottom: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_border_width_bottom,
+            border_colour_bottom: str | Callable[[ItemHandle], str] = DEFAULT_VALUES.default_border_colour_bottom,
+
+            # from super
+            width: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_width,
+            height: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_height,
+            implicit_width: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_implicit_width,
+            implicit_height: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_implicit_height,
+            x: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_x,
+            y: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_y,
+            z: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_z,
+            expand: bool | Callable[[ItemHandle], bool] = DEFAULT_VALUES.default_expand,
+            anchor_left: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_anchor_left,
+            anchor_top: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_anchor_top,
+            anchor_right: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_anchor_right,
+            anchor_bottom: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_anchor_bottom,
+            align_centre_x: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_align_centre_x,
+            align_centre_y: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_align_centre_y,
+            align_x: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_align_x,
+            align_y: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_align_y,
+            padding: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding,
+            padding_left: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding_left,
+            padding_top: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding_top,
+            padding_right: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding_right,
+            padding_bottom: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding_bottom,
+            visible: bool | Callable[[ItemHandle], bool] = DEFAULT_VALUES.default_visible,
+            opacity: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_opacity,
+            rotate_angle: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_rotate_angle,
+            rotate_centre_x: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_rotate_centre_x,
+            rotate_centre_y: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_rotate_centre_y,
+            scale: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_scale,
+            scale_centre_x: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_scale_centre_x,
+            scale_centre_y: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_scale_centre_y,
+            scale_x: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_scale_x,
+            scale_y: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_scale_y,
+            border_radius: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_border_radius,
+            clip_behaviour: ft.ClipBehavior | Callable[[ItemHandle], ft.ClipBehavior] = DEFAULT_VALUES.default_clip_behaviour,
 
             **kwargs
     ) -> None:
         """
         :param id: The id of the item, used to reference the item by its peers or offspring.
         :param children: The children of the item, which are items that are contained within the item.
+
+        :param bgcolour: The background colour of the item.
+        :param border_width: The border width of the item.
+        :param border_colour: The border colour of the item.
+        :param border_width_left: The border width of the left side of the item.
+        :param border_colour_left: The border colour of the left side of the item.
+        :param border_width_top: The border width of the top side of the item.
+        :param border_colour_top: The border colour of the top side of the item.
+        :param border_width_right: The border width of the right side of the item.
+        :param border_colour_right: The border colour of the right side of the item.
+        :param border_width_bottom: The border width of the bottom side of the item.
+        :param border_colour_bottom: The border colour of the bottom side of the item.
+
         :param width: The width of the item.
         :param height: The height of the item.
         :param implicit_width: The width of the item if width is not defined by any means.
@@ -153,7 +171,6 @@ class QRect(QItem):
         :param padding_top: The padding for the top side of the item.
         :param padding_right: The padding for the right side of the item.
         :param padding_bottom: The padding for the bottom side of the item.
-        :param bgcolour: The background colour of the item.
         :param visible: Whether the item is visible.
         :param opacity: The opacity of the item (affects children opacity).
         :param rotate_angle: The angle of rotation of the item.
@@ -164,16 +181,6 @@ class QRect(QItem):
         :param scale_centre_y: The centre of scaling of the item on the y axis. -1 to 1 from top to bottom.
         :param scale_x: The scale of the item on the x axis.
         :param scale_y: The scale of the item on the y axis.
-        :param border_width: The border width of the item.
-        :param border_colour: The border colour of the item.
-        :param border_width_left: The border width of the left side of the item.
-        :param border_colour_left: The border colour of the left side of the item.
-        :param border_width_top: The border width of the top side of the item.
-        :param border_colour_top: The border colour of the top side of the item.
-        :param border_width_right: The border width of the right side of the item.
-        :param border_colour_right: The border colour of the right side of the item.
-        :param border_width_bottom: The border width of the bottom side of the item.
-        :param border_colour_bottom: The border colour of the bottom side of the item.
         :param border_radius: The border radius of the item.
         :param clip_behaviour: The clip behaviour of the item.
         """

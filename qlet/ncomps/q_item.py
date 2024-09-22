@@ -4,7 +4,7 @@ from typing import Callable, Sequence
 
 import flet as ft
 
-from .core.item import Item, _ItemHandle
+from .core.item import Item, ItemHandle
 from .core.colour import is_light
 from ._typing_shortcut import number, optional_number
 
@@ -14,7 +14,7 @@ __all__ = ["QItem"]
 
 class QItemDefaultVals:
     @staticmethod
-    def default_width(d: _ItemHandle) -> number:
+    def default_width(d: ItemHandle) -> number:
         if d.anchor_left is not None and d.anchor_right is not None:
             return d.anchor_right - d.anchor_left
         elif d.expand:
@@ -27,7 +27,7 @@ class QItemDefaultVals:
         return d.implicit_width
 
     @staticmethod
-    def default_height(d: _ItemHandle) -> number:
+    def default_height(d: ItemHandle) -> number:
         if d.anchor_top is not None and d.anchor_bottom is not None:
             return d.anchor_bottom - d.anchor_top
         elif d.expand:
@@ -44,7 +44,7 @@ class QItemDefaultVals:
     default_implicit_height = 10
 
     @staticmethod
-    def default_x(d: _ItemHandle) -> number:
+    def default_x(d: ItemHandle) -> number:
         if d.anchor_left is not None:
             return d.anchor_left - d.parent.global_x
         elif d.anchor_right is not None:
@@ -58,7 +58,7 @@ class QItemDefaultVals:
         return 0
 
     @staticmethod
-    def default_y(d: _ItemHandle) -> number:
+    def default_y(d: ItemHandle) -> number:
         if d.anchor_top is not None:
             return d.anchor_top - d.parent.global_y
         elif d.anchor_bottom is not None:
@@ -111,16 +111,19 @@ class QItemDefaultVals:
     default_bottom = lambda d: d.global_y + d.height
 
     @staticmethod
-    def default_READY_align_x(d: _ItemHandle) -> number:
+    def default_READY_align_x(d: ItemHandle) -> number:
         d.x, d.width, d.parent.width
         d.padding_left, d.padding_right
         return random.random()
 
     @staticmethod
-    def default_READY_align_y(d: _ItemHandle) -> number:
+    def default_READY_align_y(d: ItemHandle) -> number:
         d.y, d.height, d.parent.height
         d.padding_top, d.padding_bottom
         return random.random()
+
+
+DEFAULT_VALUES = QItemDefaultVals
 
 
 class QItem(Item):
@@ -157,41 +160,41 @@ class QItem(Item):
             children: Item | Sequence[Item] = (),
             
             # position and sizing
-            width: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_width,
-            height: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_height,
-            implicit_width: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_implicit_width,
-            implicit_height: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_implicit_height,
-            x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_x,
-            y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_y,
-            z: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_z,
-            expand: bool | Callable[[_ItemHandle], bool] = QItemDefaultVals.default_expand,
-            anchor_left: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_left,
-            anchor_top: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_top,
-            anchor_right: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_right,
-            anchor_bottom: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_anchor_bottom,
-            align_centre_x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_align_centre_x,
-            align_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_align_centre_y,
-            align_x: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_x,
-            align_y: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_align_y,
-            padding: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_padding,
-            padding_left: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_padding_left,
-            padding_top: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_padding_top,
-            padding_right: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_padding_right,
-            padding_bottom: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_padding_bottom,
+            width: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_width,
+            height: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_height,
+            implicit_width: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_implicit_width,
+            implicit_height: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_implicit_height,
+            x: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_x,
+            y: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_y,
+            z: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_z,
+            expand: bool | Callable[[ItemHandle], bool] = DEFAULT_VALUES.default_expand,
+            anchor_left: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_anchor_left,
+            anchor_top: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_anchor_top,
+            anchor_right: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_anchor_right,
+            anchor_bottom: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_anchor_bottom,
+            align_centre_x: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_align_centre_x,
+            align_centre_y: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_align_centre_y,
+            align_x: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_align_x,
+            align_y: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_align_y,
+            padding: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding,
+            padding_left: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding_left,
+            padding_top: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding_top,
+            padding_right: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding_right,
+            padding_bottom: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_padding_bottom,
 
             # appearance and transformation
-            visible: bool | Callable[[_ItemHandle], bool] = QItemDefaultVals.default_visible,
-            opacity: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_opacity,
-            rotate_angle: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_angle,
-            rotate_centre_x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_centre_x,
-            rotate_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_rotate_centre_y,
-            scale: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_scale,
-            scale_centre_x: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_scale_centre_x,
-            scale_centre_y: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_scale_centre_y,
-            scale_x: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_scale_x,
-            scale_y: optional_number | Callable[[_ItemHandle], optional_number] = QItemDefaultVals.default_scale_y,
-            border_radius: number | Callable[[_ItemHandle], number] = QItemDefaultVals.default_border_radius,
-            clip_behaviour: ft.ClipBehavior | Callable[[_ItemHandle], ft.ClipBehavior] = QItemDefaultVals.default_clip_behaviour,
+            visible: bool | Callable[[ItemHandle], bool] = DEFAULT_VALUES.default_visible,
+            opacity: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_opacity,
+            rotate_angle: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_rotate_angle,
+            rotate_centre_x: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_rotate_centre_x,
+            rotate_centre_y: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_rotate_centre_y,
+            scale: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_scale,
+            scale_centre_x: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_scale_centre_x,
+            scale_centre_y: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_scale_centre_y,
+            scale_x: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_scale_x,
+            scale_y: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_scale_y,
+            border_radius: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_border_radius,
+            clip_behaviour: ft.ClipBehavior | Callable[[ItemHandle], ft.ClipBehavior] = DEFAULT_VALUES.default_clip_behaviour,
 
             **kwargs
     ) -> None:

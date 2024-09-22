@@ -5,7 +5,7 @@ from typing import Callable, Sequence, TYPE_CHECKING
 import flet as ft
 from flet_core.control_event import ControlEvent
 
-from .core.item import Item, _ItemHandle
+from .core.item import Item, ItemHandle
 from ._typing_shortcut import number
 
 
@@ -33,8 +33,8 @@ class QRootItem(Item):
             id: str | None = None,
             children: Item | Sequence[Item] = (),
             
-            wrap: bool | Callable[[_ItemHandle], bool] = False,
-            wrap_colour: str | Callable[[_ItemHandle], str] = "#FF000000",
+            wrap: bool | Callable[[ItemHandle], bool] = False,
+            wrap_colour: str | Callable[[ItemHandle], str] = "#FF000000",
 
             **kwargs
     ) -> None:
