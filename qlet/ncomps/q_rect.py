@@ -99,7 +99,7 @@ class QRect(QItem):
             border_width_bottom: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_border_width_bottom,
             border_colour_bottom: str | Callable[[ItemHandle], str] = DEFAULT_VALUES.default_border_colour_bottom,
 
-            # from super
+            # from super: QItem
             width: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_width,
             height: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_height,
             implicit_width: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_implicit_width,

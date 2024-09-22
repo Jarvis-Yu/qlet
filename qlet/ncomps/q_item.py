@@ -309,8 +309,8 @@ class QItem(Item):
             controls=[
                 self._l1_content_tr_pointer,
             ],
-            data=self,
         )
+        object.__setattr__(self._root_component, "q_data", self)
 
     def _on_width_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] width: {self.width}")
@@ -402,7 +402,7 @@ class QItem(Item):
     def _on_children_computed(self) -> None:
         super()._on_children_computed()
         def safe_z(control: ft.Control) -> number:
-            return control.data.z if hasattr(control.data, "z") else 0
+            return control.q_data.z if hasattr(control, "q_data") else 0
         self._frame.controls.sort(key=safe_z)
 
     def add_child(self, new_child: QItem) -> None:

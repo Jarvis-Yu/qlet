@@ -206,6 +206,12 @@ class QRootItem(Item):
         self.compute()
         self._root_component.update()
 
+    def _on_children_computed(self) -> None:
+        super()._on_children_computed()
+        def safe_z(control: ft.Control) -> number:
+            return control.q_data.z if hasattr(control, "q_data") else 0
+        self._frame.controls.sort(key=safe_z)
+
     def add_child(self, new_child: QItem) -> None:
         super().add_child(new_child)
         self._frame.controls.append(new_child._root_component)
