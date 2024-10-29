@@ -11,6 +11,14 @@ def rgb_val(colour: str, alpha_front: bool = True) -> tuple[int, int, int]:
     raise ValueError(f"Invalid colour: {colour}")
 
 
+def alpha_val(colour: str) -> int:
+    if colour.startswith("#"):
+        colour = colour[1:]
+    if len(colour) == 8:
+        return int(colour[:2], 16)
+    return 255
+
+
 def brightness(colour: str) -> float:
     r, g, b = rgb_val(colour)
     return 0.299 * r + 0.587 * g + 0.114 * b
@@ -34,3 +42,7 @@ def is_contrast(colour1: str, colour2: str) -> bool:
 
 def is_similar(colour1: str, colour2: str) -> bool:
     return contrast(colour1, colour2) < 32
+
+
+def contrast_bw(colour: str) -> str:
+    return "#FFFFFF" if is_dark(colour) else "#000000"

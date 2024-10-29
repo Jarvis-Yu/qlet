@@ -133,12 +133,12 @@ class QRootItem(Item):
     def _on_width_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] width: {self.width}")
         self._container.width = self.width
-        # self._inner_container.width = self.width
+        self._inner_container.width = self.width
 
     def _on_height_change(self) -> None:
         # print(f"{self.__class__.__name__}[{self.displayed_id}] height: {self.height}")
         self._container.height = self.height
-        # self._inner_container.height = self.height
+        self._inner_container.height = self.height
 
     def _on_wrap_change(self) -> None:
         self._wrap_right.visible = self.wrap
@@ -250,5 +250,7 @@ if __name__ == "__main__":
     def main(page: ft.Page):
         page.padding = 0
         root_item = QRootItem.auto_init_page(page=page, wrap=True, wrap_colour="#2FFF2F")
+        root_item.compute()
+        page.update()
 
     ft.app(target=main)

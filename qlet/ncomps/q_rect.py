@@ -184,10 +184,8 @@ class QRect(QItem):
         :param border_radius: The border radius of the item.
         :param clip_behaviour: The clip behaviour of the item.
         """
-        self._frame = ft.Stack()
-        self._root_component: ft.Stack
+        self._bg_frame = ft.Stack()
         self._bg_container: ft.Container
-        self._content_container: ft.Container
 
         super().__init__(
             id, children,
@@ -229,6 +227,7 @@ class QRect(QItem):
     def _init_flet(self) -> None:
         super()._init_flet()
         self._bg_container = ft.Container(
+            content=self._bg_frame,
             border=ft.Border(),
             rotate=ft.Rotate(0, ft.Alignment(0, 0)),
             scale=ft.Scale(alignment=ft.Alignment(0, 0)),
@@ -296,7 +295,13 @@ class QRect(QItem):
         super()._on_border_radius_change()
         self._bg_container.border_radius = self.border_radius
 
+    def _on_clip_behaviour_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] clip_behaviour: {self.clip_behaviour}")
+        super()._on_clip_behaviour_change()
+        self._bg_container.clip_behavior = self.clip_behaviour
+
     def _on_READY_bg_align_x_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] READY_bg_align_x: {self.x=}, {self.width=}")
         width = self.width - self.inset_left - self.inset_right
         self._l2_bg_tr_pointer.width = width
         self._l1_bg_conainter.padding.left = -width / 2
@@ -308,6 +313,7 @@ class QRect(QItem):
         self._l1_bg_conainter.alignment.x = align_x
 
     def _on_READY_bg_align_y_change(self) -> None:
+        # print(f"{self.__class__.__name__}[{self.displayed_id}] READY_bg_align_y: {self.y=}, {self.height=}")
         height = self.height - self.inset_top - self.inset_bottom
         self._l2_bg_tr_pointer.height = height
         self._l1_bg_conainter.padding.top = -height / 2
@@ -358,7 +364,7 @@ if __name__ == "__main__":
 
     def main(page: ft.Page):
         page.padding = 0
-        root_item = QRootItem.auto_init_page(page=page, wrap=True, wrap_colour="#2F2F2F")
+        root_item = QRootItem.auto_init_page(page=page, wrap=True, wrap_colour="#00CC00")
         root_item.add_children([
             QRect(
                 id="q",
@@ -434,6 +440,15 @@ if __name__ == "__main__":
                         ],
                     ),
                 ],
+            ),
+            QRect(
+                id="other_q",
+                width=lambda d: d.parent.width * 0.4,
+                height=lambda d: d.parent.height * 0.6,
+                x=100,
+                y=100,
+                bgcolour="#00FF00",
+                opacity=0.3,
             ),
         ])
         root_item.compute()

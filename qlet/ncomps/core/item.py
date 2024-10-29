@@ -204,6 +204,11 @@ class Item:
             on_handler = getattr(self, on_handler_name)
             assert ismethod(on_handler), f"attribute {on_handler_name} of {self.__class__.__name__} is supposed to be property update handler (a method)"
             on_handler()
+        self.on_property_value_update(property_name)
+
+    def on_property_value_update(self, property_name: str) -> None:
+        # TODO: planning to expose a way to make property directly a ft control
+        ...
 
     def _on_computed(self) -> None:
         return None
