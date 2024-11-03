@@ -16,7 +16,17 @@ __all__ = ["QText"]
 class QTextDefaultVals(QRect.DEFAULT_VALUES):
     default_text = "example text"
     default_text_colour = lambda d: contrast_bw(d.bgcolour)
+    default_text_size = lambda d: min(14, d.height // 1.5)
+    default_text_italic = False
     default_text_alignment = "left"
+    default_text_horizontal_align = None
+    default_text_vertical_align = None
+    default_text_wrap = True
+
+    @staticmethod
+    def default_READY_text_hv_align(d: ItemHandle) -> number:
+        d.text_horizontal_align, d.text_vertical_align, d.text_alignment
+        return random.random()
 
 
 DEFAULT_VALUES = QTextDefaultVals
@@ -31,7 +41,9 @@ class QText(QRect):
     @QRect.cached_classproperty
     def _RESERVED_PROPERTY_NAMES(cls) -> set[str]:
         return super()._RESERVED_PROPERTY_NAMES | {
-            "text", "text_colour", "text_alignment",
+            "text", "text_alignment", "text_colour", "text_horizontal_align", "text_italic",
+            "text_size", "text_vertical_align", "text_wrap",
+            "READY_text_hv_align",
         }
 
     def __init__(
@@ -41,7 +53,12 @@ class QText(QRect):
             
             text: str | Callable[[ItemHandle], str] = DEFAULT_VALUES.default_text,
             text_colour: str | Callable[[ItemHandle], str] = DEFAULT_VALUES.default_text_colour,
+            text_size: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_text_size,
             text_alignment: QTextAlign | Callable[[ItemHandle], QTextAlign] = DEFAULT_VALUES.default_text_alignment,
+            text_horizontal_align: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_text_horizontal_align,
+            text_vertical_align: optional_number | Callable[[ItemHandle], optional_number] = DEFAULT_VALUES.default_text_vertical_align,
+            text_wrap: bool | Callable[[ItemHandle], bool] = DEFAULT_VALUES.default_text_wrap,
+            text_italic: bool | Callable[[ItemHandle], bool] = DEFAULT_VALUES.default_text_italic,
 
             # from super: QRect
             inset: number | Callable[[ItemHandle], number] = DEFAULT_VALUES.default_inset,
@@ -102,6 +119,15 @@ class QText(QRect):
         :param id: The id of the item, used to reference the item by its peers or offspring.
         :param children: The children of the item, which are items that are contained within the item.
 
+        :param text: The text content of the item.
+        :param text_colour: The text colour of the item.
+        :param text_size: The text size of the item.
+        :param text_alignment: The text alignment of the item.
+        :param text_horizontal_align: The horizontal alignment of the text, from -1 to 1 (left to right).
+        :param text_vertical_align: The vertical alignment of the text, from -1 to 1 (top to bottom).
+        :param text_wrap: Whether the text should wrap.
+        :param text_italic: Whether the text should be italicised.
+
         :param bgcolour: The background colour of the item.
         :param border_width: The border width of the item.
         :param border_colour: The border colour of the item.
@@ -147,10 +173,10 @@ class QText(QRect):
         :param clip_behaviour: The clip behaviour of the item.
         """
         self._frame = ft.Stack()
-        self._ft_text = ft.Text()
+        self._ft_text = ft.Text(size=25)
         self._bg_container: ft.Container
-        self._content_container: ft.Container
         self._ft_text: ft.Text
+        self._text_container: ft.Container
 
         super().__init__(
             id, children,
@@ -177,14 +203,22 @@ class QText(QRect):
 
         self.text = text
         self.text_colour = text_colour
+        self.text_size = text_size
+        self.text_alignment = text_alignment
+        self.text_horizontal_align = text_horizontal_align
+        self.text_vertical_align = text_vertical_align
+        self.text_wrap = text_wrap
+        self.text_italic = text_italic
+
+        self.READY_text_hv_align = QTextDefaultVals.default_READY_text_hv_align
 
     def _init_flet(self) -> None:
         super()._init_flet()
+        self._text_container = ft.Container(
+            self._ft_text,
+        )
         self._bg_container.content = ft.TransparentPointer(
-            ft.Container(
-                self._ft_text,
-                alignment=ft.Alignment(0, 0),
-            ),
+            self._text_container,
         )
 
     def _on_text_change(self) -> None:
@@ -193,7 +227,13 @@ class QText(QRect):
     def _on_text_colour_change(self) -> None:
         self._ft_text.color = self.text_colour
 
-    __TEXT_ALIGN_MAP = {
+    def _on_text_size_change(self) -> None:
+        self._ft_text.size = self.text_size
+
+    def _on_text_italic_change(self) -> None:
+        self._ft_text.italic = self.text_italic
+
+    __TEXT_ALIGN_MAP: dict[QTextAlign, ft.TextAlign] = {
         "left": ft.TextAlign.LEFT,
         "right": ft.TextAlign.RIGHT,
         "centre": ft.TextAlign.CENTER,
@@ -203,6 +243,29 @@ class QText(QRect):
     }
     def _on_text_alignment_change(self) -> None:
         self._ft_text.text_align = self.__TEXT_ALIGN_MAP.get(self.text_alignment, None)
+
+    def _on_text_wrap_change(self) -> None:
+        self._ft_text.no_wrap = not self.text_wrap
+
+    __TEXT_ALIGN_H_MAP: dict[QTextAlign, int] = {
+        "left": -1,
+        "right": 1,
+        "centre": 0,
+        "start": -1,
+        "justify": 0,
+        "end": 1,
+    }
+    def _on_READY_text_hv_align_change(self) -> None:
+        if (self.text_horizontal_align is None and self.text_vertical_align is None):
+            self._text_container.alignment = None
+            return
+        horizontal_align = (
+            self.text_horizontal_align
+            if self.text_horizontal_align is not None
+            else self.__TEXT_ALIGN_H_MAP.get(self.text_alignment, -1)
+        )
+        vertical_align = self.text_vertical_align if self.text_vertical_align is not None else -1
+        self._text_container.alignment = ft.Alignment(horizontal_align, vertical_align)
 
 
 if __name__ == "__main__":
@@ -220,15 +283,17 @@ if __name__ == "__main__":
                 children=[
                     QText(
                         id="r1_t1",
-                        text="Hello, World!",
+                        text="Hello, World! This is a test text.",
                         text_alignment="centre",
+                        text_vertical_align=0,
 
-                        width=20,
-                        height=20,
+                        width=150,
+                        height=30,
                         align_x=0,
                         align_y=0,
                         border_colour="#FF0000",
                         border_width=1,
+                        border_width_right=20,
                         children=[
                             QRect(
                                 id="r1_t1_r1",
